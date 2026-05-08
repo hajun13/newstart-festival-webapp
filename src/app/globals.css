@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(135deg, rgba(244, 200, 74, 0.18), transparent 32%),
+    linear-gradient(225deg, rgba(61, 166, 160, 0.15), transparent 36%),
+    #fffaf0;
+  color: #151713;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.scanline {
+  background-image: linear-gradient(rgba(21, 23, 19, 0.05) 1px, transparent 1px);
+  background-size: 100% 12px;
+}
