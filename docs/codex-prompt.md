@@ -6,12 +6,16 @@
 
 이 레포는 2026 하계 청소년 페스티벌 **NEWSTART 생명의 열쇠를 찾아라** 웹앱 프로젝트다.
 
+목표는 단순 MVP가 아니라, 행사 당일 운영 가능한 완성본을 구현하는 것이다. 구현 완료 여부는 `docs/acceptance-criteria.md`와 `docs/test-harness.md`를 기준으로 판단한다.
+
 먼저 다음 문서를 반드시 읽고 요구사항을 이해한 뒤 구현을 시작해줘.
 
 1. `docs/requirements.md`
 2. `docs/missions.md`
 3. `docs/data-model.md`
 4. `docs/load-testing.md`
+5. `docs/acceptance-criteria.md`
+6. `docs/test-harness.md`
 
 ## 프로젝트 핵심
 
@@ -144,48 +148,95 @@
 - 팀 코드 기반 자체 로그인
 - Vercel 배포
 
-## 안정성 요구사항
+## 완성 구현 범위
 
-행사 당일 약 300명이 동시에 접속할 수 있으므로 안정성을 최우선으로 구현한다.
+다음을 모두 구현해야 한다.
 
-반드시 지켜야 할 것:
+### 1. 앱 구조
 
-1. 이메일/문자 인증을 사용하지 않는다.
-2. 팀 코드 기반 로그인으로 구현한다.
-3. 모든 미션 제출은 중복 제출 방지 로직을 포함한다.
-4. 점수 부여는 idempotent하게 처리한다.
-5. 같은 팀이 같은 미션을 여러 번 제출해도 점수가 중복 부여되지 않아야 한다.
-6. 홍명기홀 최종 인증은 8개 테마 클리어 팀만 성공 처리한다.
-7. 히든 QR은 팀당 최대 3개까지만 점수 인정한다.
-8. 사진 업로드는 클라이언트에서 압축 후 업로드한다.
-9. 영상 업로드는 기본 지원하지 않거나 별도 제출로 분리한다.
-10. 관리자 화면에서 점수 수동 수정과 제출 취소가 가능해야 한다.
-11. 모든 중요한 액션은 audit log에 남긴다.
+- Next.js 15 + TypeScript + Tailwind 프로젝트 구성
+- shadcn/ui 기반 모바일 우선 UI
+- `.env.example` 작성
+- README에 실행, 설정, 배포, 테스트 방법 작성
 
-## 부하 테스트 요구사항
+### 2. 데이터베이스
 
-다음도 함께 구현하거나 최소한 파일 구조와 TODO를 만들어둔다.
+- `supabase/schema.sql` 작성
+- `supabase/seed.sql` 또는 `scripts/seed.ts` 작성
+- 30개 팀 seed
+- 16개 미션 seed
+- 10개 히든 QR seed
+- audit log 테이블 포함
 
-- k6 테스트 스크립트
-- Playwright E2E 테스트
-- 30개 팀과 16개 미션 seed script
-- 500명 동시 접속 시나리오
-- 미션 제출 폭주 시나리오
-- 최종 인증 폭주 시나리오
+### 3. 참가자 기능
 
-## 첫 번째 작업 범위
+- 팀 코드 로그인
+- 대시보드
+- 미션 코드 입력
+- 미션 상세
+- quiz/text/photo/screenshot/staff/final/easter_qr 제출 흐름
+- 테마 클리어 상태
+- 생명의 열쇠 코드 표시
+- 추첨권 계산 표시
 
-한 번에 모든 기능을 완성하려고 하지 말고, 먼저 MVP 뼈대를 구현해줘.
+### 4. 관리자 기능
 
-1. Next.js 15 + TypeScript + Tailwind 프로젝트 초기 구조 생성
-2. shadcn/ui 기반 기본 UI 구성
-3. Supabase 클라이언트 설정
-4. Supabase SQL 스키마 파일 작성
-5. 미션 seed 데이터 작성
-6. 팀 seed 데이터 작성
-7. `/login`, `/dashboard`, `/code`, `/mission/[code]` 페이지 구현
-8. 점수 계산 유틸 구현
-9. 테마 클리어 및 생명의 열쇠 코드 유틸 구현
-10. `/admin` 기본 화면 구현
+- 관리자 대시보드
+- 팀 현황
+- 제출 검토
+- 스태프 승인
+- 점수 수동 수정
+- 점수 재계산
+- 공지/돌발 미션 발송
+- 숨은 운영진 보너스 지급
+- CSV export
+- audit log 조회
 
-구현 후 README에 로컬 실행 방법과 Supabase 환경변수 설정 방법을 작성해줘.
+### 5. 안정성
+
+- 중복 제출 방지
+- 중복 점수 지급 방지
+- 최종 인증 중복 방지
+- 히든 QR 최대 3개 제한
+- 숨은 운영진 보너스 팀당 1회 제한
+- 사진 업로드 압축 또는 파일 크기 제한
+- 영상 업로드는 기본 제외 또는 별도 제출 안내
+
+### 6. 테스트 하네스
+
+- Unit test 작성
+- Playwright E2E test 작성
+- k6 load test 작성
+- seed/test mode 제공
+- CI에서 lint/typecheck/test/build 가능하게 구성
+
+## 필수 테스트 명령
+
+다음 명령이 동작해야 한다.
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run test:e2e
+npm run build
+npm run test:load
+```
+
+실제 외부 Supabase가 없는 환경에서도 핵심 unit test는 통과해야 한다. E2E는 mock/test mode 또는 local seed 기반으로 실행 가능해야 한다.
+
+## 완료 보고 기준
+
+구현 완료 후 다음을 보고해줘.
+
+1. 구현한 페이지 목록
+2. 구현한 API/action 목록
+3. Supabase 스키마 및 seed 파일 위치
+4. 테스트 명령 실행 결과
+5. 완성 정의 문서의 수용 기준 충족 여부
+6. 미구현 항목이 있다면 명확한 사유와 목록
+7. 행사 전 운영자가 직접 확인해야 할 체크리스트
+
+## 구현 순서 제안
+
+순서는 자유롭게 하되, 최종 결과는 `docs/acceptance-criteria.md`와 `docs/test-harness.md`를 통과해야 한다. 중간에 MVP만 만들고 멈추지 말고, 완성 정의를 기준으로 끝까지 구현해줘.
