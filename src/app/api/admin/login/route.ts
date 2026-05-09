@@ -1,6 +1,5 @@
+import { ADMIN_SESSION_COOKIE } from "@/lib/server/app-state";
 import { NextResponse } from "next/server";
-
-const ADMIN_SESSION_KEY = "newstart-admin-ok";
 
 export async function POST(request: Request) {
   const { password } = (await request.json()) as { password?: string };
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_SESSION_KEY, "1", {
+  response.cookies.set(ADMIN_SESSION_COOKIE, "1", {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

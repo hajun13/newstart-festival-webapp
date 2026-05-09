@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createDefaultState, getTeamProgress, submitMission } from "@/lib/state";
 import { THEMES } from "@/lib/types";
 
+function quizAnswers(state: ReturnType<typeof createDefaultState>, missionCode: string) {
+  const mission = state.missions.find((item) => item.code === missionCode)!;
+  return {
+    answers: Object.fromEntries(mission.quiz!.questions.map((question) => [question.id, question.answer]))
+  };
+}
+
 describe("theme status", () => {
   it("같은 테마에서 1개 미션 성공 시 테마가 클리어된다", () => {
     const initial = createDefaultState();
@@ -9,7 +16,7 @@ describe("theme status", () => {
       state: initial,
       teamId: "team-01",
       missionCode: "NUT-30",
-      answerJson: { answers: { n1: "균형", n2: "물", n3: "비타민" } }
+      answerJson: quizAnswers(initial, "NUT-30")
     });
     const progress = getTeamProgress(result.state, "team-01");
     expect(progress.clearedThemes).toEqual(["nutrition"]);

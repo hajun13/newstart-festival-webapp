@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { buildTeamRows, hasAdminSession, loadState, setAdminSession } from "@/lib/state";
+import { buildTeamRows, loadState, setAdminSession, syncStateFromServer } from "@/lib/state";
 import { formatScore } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 
@@ -14,7 +14,18 @@ export default function AdminPage() {
   const [active, setActive] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => setActive(hasAdminSession()), []);
+  useEffect(() => {
+    fetch("/api/admin/session")
+      .then((response) => response.json())
+      .then((result: { ok: boolean }) => {
+        if (result.ok) syncStateFromServer().catch(() => undefined);
+        if (result.ok) {
+          setActive(true);
+          setAdminSession(true);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   const state = loadState();
   const rows = buildTeamRows(state);
@@ -69,9 +80,10 @@ export default function AdminPage() {
     <AppShell>
       <AdminNav />
       <div className="space-y-5 pb-20">
-        <div>
-          <h1 className="text-3xl font-black">운영본부 대시보드</h1>
-          <p className="mt-1 text-sm text-ink/65">15~30초 polling 운영을 권장하며, 이 화면은 로컬 상태 기준입니다.</p>
+        <div className="rounded-md border-2 border-ink bg-night p-5 text-paper shadow-cut">
+          <p className="text-xs font-black tracking-[0.18em] text-citrus">FESTIVAL CONTROL</p>
+          <h1 className="mt-2 text-3xl font-black">운영본부 대시보드</h1>
+          <p className="mt-1 text-sm text-paper/70">실시간 운영 DB를 읽고, 승인/점수 변경은 관리자 인증 쿠키로만 저장됩니다.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           {[

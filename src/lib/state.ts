@@ -95,7 +95,7 @@ export function saveState(state: AppState) {
   if (isBrowser()) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     window.dispatchEvent(new CustomEvent("newstart-state"));
-    if (usesRemoteState()) {
+    if (usesRemoteState() && hasAdminSession()) {
       fetch("/api/state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

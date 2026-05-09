@@ -7,7 +7,7 @@ import { THEME_LABELS } from "@/lib/scoring/code-pieces";
 import { formatScore } from "@/lib/utils";
 import { getActiveTeamId, getTeamProgress, loadState, requireTeam } from "@/lib/state";
 import type { AppState, Team } from "@/lib/types";
-import { KeyRound, LogOut, Ticket, Trophy } from "lucide-react";
+import { Compass, KeyRound, LogOut, Map, Ticket, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,16 +39,18 @@ export default function DashboardPage() {
     <AppShell>
       <div className="grid gap-4 pb-20 lg:grid-cols-[1fr_340px]">
         <section className="space-y-4">
-          <div className="rounded-lg bg-ink p-5 text-paper shadow-field">
-            <p className="text-sm font-bold text-citrus">{team.name}</p>
+          <div className="relative overflow-hidden rounded-md border-2 border-ink bg-night p-5 text-paper shadow-cut">
+            <div className="paper-grain absolute inset-0 opacity-10" />
+            <p className="relative text-sm font-black text-citrus">{team.name}</p>
             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-              <div>
+              <div className="relative">
+                <p className="mb-2 text-xs font-black tracking-[0.18em] text-paper/55">CURRENT SCORE</p>
                 <h1 className="text-4xl font-black">{formatScore(progress.score)}</h1>
                 <p className="mt-1 text-paper/70">
                   테마 {progress.clearedThemes.length}/8 · 미션 {progress.completedMissionCodes.length}/16
                 </p>
               </div>
-              <div className="rounded-md bg-citrus px-4 py-3 text-center text-ink">
+              <div className="relative rounded-md border-2 border-ink bg-citrus px-4 py-3 text-center text-ink shadow-[5px_5px_0_rgba(0,0,0,0.24)]">
                 <Ticket className="mx-auto mb-1" size={22} />
                 <div className="text-2xl font-black">{progress.tickets}장</div>
               </div>
@@ -58,8 +60,11 @@ export default function DashboardPage() {
           <Card>
             <div className="flex items-center justify-between gap-3">
               <div>
+                <p className="mb-1 flex items-center gap-2 text-xs font-black tracking-[0.16em] text-clay">
+                  <Compass size={14} /> LIFE KEY
+                </p>
                 <h2 className="text-xl font-black">생명의 열쇠</h2>
-                <p className="text-sm text-ink/60">테마를 클리어할 때마다 코드 조각이 열립니다.</p>
+                <p className="text-sm text-ink/60">테마를 클리어할 때마다 마지막 장소 단서가 열립니다.</p>
               </div>
               {progress.isNewstartComplete ? <Trophy className="text-coral" /> : null}
             </div>
@@ -67,13 +72,13 @@ export default function DashboardPage() {
               {progress.codePieces.map((piece, index) => (
                 <div
                   key={`${piece}-${index}`}
-                  className="aspect-square rounded-md border border-ink/10 bg-paper text-center text-2xl font-black leading-[3rem] sm:leading-[4rem]"
+                  className="aspect-square rounded-md border-2 border-ink/15 bg-paper text-center text-2xl font-black leading-[3rem] shadow-[3px_3px_0_rgba(21,23,19,0.1)] sm:leading-[4rem]"
                 >
                   {piece}
                 </div>
               ))}
             </div>
-            <div className="mt-4 rounded-md bg-moss px-4 py-3 text-center text-xl font-black text-paper">
+            <div className="mt-4 rounded-md border-2 border-ink bg-moss px-4 py-3 text-center text-xl font-black text-paper">
               {progress.lifeKey}
             </div>
           </Card>
@@ -82,7 +87,7 @@ export default function DashboardPage() {
             {Object.entries(THEME_LABELS).map(([theme, label]) => {
               const cleared = progress.clearedThemes.includes(theme as never);
               return (
-                <Card key={theme} className={cleared ? "border-moss bg-moss/5" : ""}>
+                <Card key={theme} className={cleared ? "border-moss bg-moss/10" : "bg-linen/80"}>
                   <div className="flex items-center justify-between">
                     <span className="font-bold">{label}</span>
                     <span className={cleared ? "text-moss" : "text-ink/40"}>
@@ -103,7 +108,8 @@ export default function DashboardPage() {
           </Link>
           <Link href="/final">
             <Button variant="secondary" className="w-full">
-              <Trophy size={18} /> 홍명기홀 최종 인증
+              {progress.isNewstartComplete ? <Trophy size={18} /> : <Map size={18} />}
+              {progress.isNewstartComplete ? "최종 장소 인증" : "마지막 장소 잠김"}
             </Button>
           </Link>
           <Card>

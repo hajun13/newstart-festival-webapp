@@ -1,5 +1,6 @@
 import { loginTeam } from "@/lib/state";
 import { getMockState } from "@/lib/server/mock-db";
+import { TEAM_SESSION_COOKIE } from "@/lib/server/app-state";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     if (error || !data) {
       return NextResponse.json({ ok: false, message: "팀 코드를 확인해 주세요." }, { status: 401 });
     }
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       team: {
         id: data.id,
@@ -29,10 +30,25 @@ export async function POST(request: Request) {
         manualAdjustment: data.manual_adjustment ?? 0
       }
     });
+    response.cookies.set(TEAM_SESSION_COOKIE, data.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 8
+    });
+    return response;
   }
   const team = loginTeam(getMockState(), code ?? "");
   if (!team) {
     return NextResponse.json({ ok: false, message: "팀 코드를 확인해 주세요." }, { status: 401 });
   }
-  return NextResponse.json({ ok: true, team });
+  const response = NextResponse.json({ ok: true, team });
+  response.cookies.set(TEAM_SESSION_COOKIE, team.id, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 8
+  });
+  return response;
 }

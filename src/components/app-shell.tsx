@@ -34,14 +34,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <header className="sticky top-0 z-20 border-b border-ink/10 bg-paper/95 backdrop-blur">
+      <div className="festival-ribbon h-2" />
+      <header className="sticky top-0 z-20 border-b-2 border-ink/15 bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/dashboard" className="font-black tracking-[0.08em]">
-            NEWSTART
+          <Link href="/dashboard" className="leading-tight">
+            <span className="block text-[10px] font-black tracking-[0.28em] text-clay">
+              2026 서중한합회
+            </span>
+            <span className="text-base font-black tracking-[0.08em]">청소년 페스티벌</span>
           </Link>
           <div className="flex items-center gap-2 text-xs sm:text-sm">
             {teamName ? (
-              <span className="rounded-md bg-citrus px-2 py-1 font-semibold">
+              <span className="rounded-md border border-ink/15 bg-citrus px-2 py-1 font-black">
                 {teamName} · {tickets}장
               </span>
             ) : null}

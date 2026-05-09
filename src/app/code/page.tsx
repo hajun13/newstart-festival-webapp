@@ -11,7 +11,7 @@ import { useState } from "react";
 
 export default function CodePage() {
   const router = useRouter();
-  const [code, setCode] = useState("NUT-30");
+  const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -37,17 +37,19 @@ export default function CodePage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-xl pb-20">
-        <Card>
-          <QrCode className="mb-4 text-moss" size={32} />
+        <Card className="relative overflow-hidden">
+          <div className="festival-ribbon absolute inset-x-0 top-0 h-2" />
+          <QrCode className="mb-4 mt-3 text-moss" size={34} />
           <h1 className="text-2xl font-black">미션 코드 입력</h1>
           <p className="mt-2 text-sm text-ink/65">
-            현장 안내판의 코드를 입력하세요. 히든 QR은 `EGG-01` 형식으로 처리됩니다.
+            현장 안내판이나 QR에 표시된 코드를 입력하세요. 히든 QR은 별도 보너스로 처리됩니다.
           </p>
           <form className="mt-6 space-y-4" onSubmit={submit}>
             <Input
               value={code}
               onChange={(event) => setCode(event.target.value)}
               autoComplete="off"
+              placeholder="예: 현장 QR 코드"
               className="text-center text-2xl font-black uppercase tracking-widest"
             />
             {message ? <p className="text-sm font-semibold text-coral">{message}</p> : null}

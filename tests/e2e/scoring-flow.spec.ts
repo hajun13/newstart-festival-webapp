@@ -4,7 +4,7 @@ test("완주 보너스, 올클리어 보너스, 중복 제출 방지, 추첨권 
   await page.goto("/login");
   await page.getByRole("button", { name: /초기화/ }).click();
   await page.getByLabel("팀 코드").fill("TEAM-01-KEY");
-  await page.getByRole("button", { name: /로그인/ }).click();
+  await page.getByRole("button", { name: "게임 시작" }).click();
 
   await page.evaluate(() => {
     type StoredMission = { id: string; type: string; points: number };
@@ -33,9 +33,6 @@ test("완주 보너스, 올클리어 보너스, 중복 제출 방지, 추첨권 
   await expect(page.getByText(/테마 8\/8 · 미션 16\/16/)).toBeVisible();
 
   await page.goto("/mission/NUT-30");
-  await page.getByLabel("균형").check();
-  await page.getByLabel("물").check();
-  await page.getByLabel("비타민").check();
   await page.getByRole("button", { name: /제출하기/ }).click();
   await expect(page.getByText(/중복 지급되지 않습니다/)).toBeVisible();
 

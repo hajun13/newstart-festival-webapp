@@ -4,7 +4,15 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { THEME_LABELS } from "@/lib/scoring/code-pieces";
-import { getActiveTeamId, getTeamProgress, loadState, saveState, verifyFinal } from "@/lib/state";
+import {
+  getActiveTeamId,
+  getTeamProgress,
+  loadState,
+  saveState,
+  syncStateFromServer,
+  usesRemoteState,
+  verifyFinal
+} from "@/lib/state";
 import { Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -22,8 +30,19 @@ export default function FinalPage() {
     setTeamId(active);
   }, [router]);
 
-  function submit() {
+  async function submit() {
     if (!teamId) return;
+    if (usesRemoteState()) {
+      const response = await fetch("/api/final", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId })
+      });
+      const result = (await response.json()) as { ok: boolean; message?: string };
+      await syncStateFromServer();
+      setMessage(result.message ?? (response.ok ? "최종 인증이 반영되었습니다." : "아직 열리지 않았습니다."));
+      return;
+    }
     const result = verifyFinal(loadState(), teamId);
     saveState(result.state);
     setMessage(result.message);
@@ -34,9 +53,11 @@ export default function FinalPage() {
       <div className="mx-auto max-w-2xl pb-20">
         <Card>
           <Trophy className="mb-4 text-coral" size={40} />
-          <h1 className="text-3xl font-black">홍명기홀 최종 인증</h1>
+          <h1 className="text-3xl font-black">
+            {progress?.isNewstartComplete ? "최종 장소 인증" : "마지막 장소는 아직 잠겨 있습니다"}
+          </h1>
           <p className="mt-3 text-ink/70">
-            8개 테마를 모두 클리어한 팀만 최종 QR 인증이 성공합니다. 성공 시 추첨권 2장이 추가되며 팀당 1회만 인정됩니다.
+            8개 테마를 모두 클리어한 팀만 마지막 QR 인증이 성공합니다. 성공 시 추첨권 2장이 추가되며 팀당 1회만 인정됩니다.
           </p>
           {progress ? (
             <div className="mt-5 rounded-md bg-paper p-4">
@@ -57,7 +78,9 @@ export default function FinalPage() {
           ) : null}
           {message ? <p className="mt-4 rounded-md bg-citrus/30 p-3 font-bold">{message}</p> : null}
           <div className="mt-5 flex flex-wrap gap-2">
-            <Button onClick={submit}>최종 인증 처리</Button>
+            <Button onClick={submit}>
+              {progress?.isNewstartComplete ? "최종 인증 처리" : "잠금 확인"}
+            </Button>
             <Button variant="secondary" onClick={() => router.push("/dashboard")}>
               대시보드
             </Button>

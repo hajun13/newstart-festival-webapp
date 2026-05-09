@@ -3,7 +3,14 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { claimEasterEgg, getActiveTeamId, loadState, saveState } from "@/lib/state";
+import {
+  claimEasterEgg,
+  getActiveTeamId,
+  loadState,
+  saveState,
+  syncStateFromServer,
+  usesRemoteState
+} from "@/lib/state";
 import { Gift } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,16 +20,31 @@ export default function EasterPage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
 
-  function claim() {
+  async function claim() {
     const teamId = getActiveTeamId();
     if (!teamId) {
       router.push("/login");
       return;
     }
     try {
-      const result = claimEasterEgg(loadState(), teamId, params.code);
-      saveState(result.state);
-      setMessage(result.message);
+      if (usesRemoteState()) {
+        const response = await fetch(`/api/easter/${params.code}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ teamId })
+        });
+        const result = (await response.json()) as { ok: boolean; message?: string };
+        if (!response.ok || !result.ok) {
+          setMessage(result.message ?? "히든 QR 처리 실패");
+          return;
+        }
+        await syncStateFromServer();
+        setMessage(result.message ?? "히든 QR이 반영되었습니다.");
+      } else {
+        const result = claimEasterEgg(loadState(), teamId, params.code);
+        saveState(result.state);
+        setMessage(result.message);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "히든 QR 처리 실패");
     }

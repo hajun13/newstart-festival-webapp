@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { ALL_CLEAR_BONUS, NEWSTART_COMPLETION_BONUS } from "@/lib/scoring/calculate-score";
 import { createDefaultState, getTeamProgress, setSubmissionStatus, submitMission } from "@/lib/state";
 
+function quizAnswers(state: ReturnType<typeof createDefaultState>, missionCode: string) {
+  const mission = state.missions.find((item) => item.code === missionCode)!;
+  return {
+    answers: Object.fromEntries(mission.quiz!.questions.map((question) => [question.id, question.answer]))
+  };
+}
+
 function approveAllMissions() {
   let state = createDefaultState();
   for (const mission of state.missions) {
@@ -39,13 +46,13 @@ describe("scoring", () => {
       state,
       teamId: "team-01",
       missionCode: "NUT-30",
-      answerJson: { answers: { n1: "균형", n2: "물", n3: "비타민" } }
+      answerJson: quizAnswers(state, "NUT-30")
     }).state;
     state = submitMission({
       state,
       teamId: "team-01",
       missionCode: "NUT-30",
-      answerJson: { answers: { n1: "균형", n2: "물", n3: "비타민" } }
+      answerJson: quizAnswers(state, "NUT-30")
     }).state;
     expect(getTeamProgress(state, "team-01").score).toBe(30);
   });
@@ -65,7 +72,7 @@ describe("scoring", () => {
       state,
       teamId: "team-01",
       missionCode: "NUT-30",
-      answerJson: { answers: { n1: "균형", n2: "물", n3: "비타민" } }
+      answerJson: quizAnswers(state, "NUT-30")
     }).state;
     const submission = state.submissions[0];
     state = setSubmissionStatus({

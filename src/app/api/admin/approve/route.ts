@@ -1,8 +1,14 @@
 import { getMockState, setMockState } from "@/lib/server/mock-db";
+import { hasAdminCookie, readAppState, writeAppState } from "@/lib/server/app-state";
 import { setSubmissionStatus, staffApproveByTeamMission } from "@/lib/state";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  const cookieStore = await cookies();
+  if (!hasAdminCookie(cookieStore)) {
+    return NextResponse.json({ ok: false, message: "관리자 인증이 필요합니다." }, { status: 401 });
+  }
   const body = (await request.json()) as {
     submissionId?: string;
     teamId?: string;
@@ -12,21 +18,23 @@ export async function POST(request: Request) {
     reviewedBy?: string;
   };
   try {
+    const current = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "false" ? await readAppState() : getMockState();
     const state = body.submissionId
       ? setSubmissionStatus({
-          state: getMockState(),
+          state: current,
           submissionId: body.submissionId,
           status: body.status ?? "approved",
           reviewedBy: body.reviewedBy ?? "admin"
         })
       : staffApproveByTeamMission({
-          state: getMockState(),
-          teamId: body.teamId ?? "team-01",
+          state: current,
+          teamId: body.teamId ?? "",
           missionCode: body.missionCode ?? "WTR-80",
           success: body.success ?? true,
           reviewedBy: body.reviewedBy ?? "admin"
         });
-    setMockState(state);
+    if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "false") await writeAppState(state);
+    else setMockState(state);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(

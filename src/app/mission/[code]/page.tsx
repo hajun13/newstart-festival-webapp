@@ -10,7 +10,9 @@ import {
   getActiveTeamId,
   loadState,
   saveState,
-  submitMission
+  submitMission,
+  syncStateFromServer,
+  usesRemoteState
 } from "@/lib/state";
 import type { Mission } from "@/lib/types";
 import { CheckCircle2, FileImage, ShieldCheck } from "lucide-react";
@@ -64,8 +66,29 @@ export default function MissionPage() {
         answerJson: { answers },
         filePaths: files
       });
-      saveState(result.state);
-      setMessage(result.message);
+      if (usesRemoteState()) {
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamId,
+            missionCode: mission.code,
+            answerText: text,
+            answerJson: { answers },
+            filePaths: files
+          })
+        });
+        const remoteResult = (await response.json()) as { ok: boolean; message?: string };
+        if (!response.ok || !remoteResult.ok) {
+          setMessage(remoteResult.message ?? "제출 중 문제가 발생했습니다.");
+          return;
+        }
+        await syncStateFromServer();
+        setMessage(remoteResult.message ?? "제출이 반영되었습니다.");
+      } else {
+        saveState(result.state);
+        setMessage(result.message);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "제출 중 문제가 발생했습니다.");
     } finally {
@@ -77,27 +100,28 @@ export default function MissionPage() {
     <AppShell>
       <div className="grid gap-4 pb-20 lg:grid-cols-[1fr_340px]">
         <section className="space-y-4">
-          <Card>
+          <Card className="relative overflow-hidden bg-linen">
+            <div className="festival-ribbon absolute inset-x-0 top-0 h-2" />
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-bold text-moss">{mission.themeLabel}</p>
-                <h1 className="mt-1 text-3xl font-black">{mission.title}</h1>
+                <p className="mt-3 text-sm font-black tracking-[0.12em] text-clay">{mission.themeLabel}</p>
+                <h1 className="mt-1 text-3xl font-black leading-tight">{mission.title}</h1>
               </div>
-              <span className="rounded-md bg-citrus px-3 py-2 text-lg font-black">
+              <span className="mt-3 rounded-md border-2 border-ink bg-citrus px-3 py-2 text-lg font-black shadow-[4px_4px_0_rgba(21,23,19,0.18)]">
                 {mission.points}점
               </span>
             </div>
             <p className="mt-4 leading-7 text-ink/75">{mission.description}</p>
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
-              <div className="rounded-md bg-paper p-3">
+              <div className="rounded-md border border-ink/10 bg-paper p-3">
                 <dt className="font-bold">제출 방식</dt>
                 <dd>{SUBMISSION_TYPE_LABELS[mission.type]}</dd>
               </div>
-              <div className="rounded-md bg-paper p-3">
+              <div className="rounded-md border border-ink/10 bg-paper p-3">
                 <dt className="font-bold">완료 조건</dt>
                 <dd>{mission.successCriteria}</dd>
               </div>
-              <div className="rounded-md bg-paper p-3">
+              <div className="rounded-md border border-ink/10 bg-paper p-3">
                 <dt className="font-bold">장소 힌트</dt>
                 <dd>{mission.locationHint}</dd>
               </div>
@@ -110,13 +134,13 @@ export default function MissionPage() {
               {mission.type === "quiz" && mission.quiz ? (
                 <div className="space-y-4">
                   {mission.quiz.questions.map((question) => (
-                    <fieldset key={question.id} className="rounded-md border border-ink/10 p-3">
+                    <fieldset key={question.id} className="rounded-md border-2 border-ink/10 bg-paper/70 p-3">
                       <legend className="px-1 font-bold">{question.prompt}</legend>
                       <div className="mt-2 grid gap-2 sm:grid-cols-3">
                         {question.options.map((option) => (
                           <label
                             key={option}
-                            className="flex cursor-pointer items-center gap-2 rounded-md bg-paper px-3 py-2"
+                            className="flex cursor-pointer items-center gap-2 rounded-md border border-ink/10 bg-linen px-3 py-2 hover:border-moss"
                           >
                             <input
                               type="radio"
