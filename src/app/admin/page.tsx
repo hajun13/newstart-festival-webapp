@@ -211,7 +211,7 @@ export default function AdminPage() {
             <table className="min-w-[1320px] w-full border-separate border-spacing-1 text-left text-xs">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 rounded-md bg-white px-3 py-2 text-sm">팀</th>
+                  <th className="sticky left-0 z-[1] rounded-md bg-white px-3 py-2 text-sm">팀</th>
                   <th className="rounded-md bg-paper px-3 py-2">점수</th>
                   {state.missions.map((mission) => (
                     <th key={mission.id} className="rounded-md bg-paper px-2 py-2 text-center">
@@ -223,7 +223,7 @@ export default function AdminPage() {
               <tbody>
                 {rows.map(({ team, progress }) => (
                   <tr key={team.id}>
-                    <th className="sticky left-0 z-10 rounded-md bg-white px-3 py-2 font-black">
+                    <th className="sticky left-0 z-[1] rounded-md bg-white px-3 py-2 font-black">
                       {team.teamNumber}번 · {team.name}
                     </th>
                     <td className="rounded-md bg-paper px-3 py-2 font-bold">{formatScore(progress.score)}</td>

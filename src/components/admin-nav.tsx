@@ -37,7 +37,7 @@ export function AdminNav() {
   if (!active) return null;
 
   return (
-    <div className="sticky top-[64px] z-10 mb-5 flex flex-wrap items-center gap-2 border-b border-ink/10 bg-paper/95 py-3 backdrop-blur">
+    <div className="sticky top-[72px] z-30 mb-5 flex flex-wrap items-center gap-2 border-b border-ink/10 bg-paper/95 py-3 backdrop-blur">
       {links.map(([href, label]) => (
         <Link key={href} href={href}>
           <Button

@@ -77,7 +77,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-paper text-ink">
       <div className="festival-ribbon h-2" />
-      <header className="sticky top-0 z-20 border-b-2 border-ink/15 bg-paper/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b-2 border-ink/15 bg-paper/95 backdrop-blur">
         <div className={`mx-auto flex items-center justify-between px-4 py-3 ${mode === "admin" ? "max-w-[1680px] lg:px-6" : "max-w-6xl"}`}>
           <Link href={mode === "admin" ? "/admin" : "/dashboard"} className="leading-tight">
             <span className="block text-[10px] font-black tracking-[0.28em] text-clay">
