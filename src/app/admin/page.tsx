@@ -26,8 +26,14 @@ function missionStatusClass(status?: string) {
 export default function AdminPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
-  const [active, setActive] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [active, setActive] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("newstart-admin-session") === "true";
+  });
+  const [checkingSession, setCheckingSession] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem("newstart-admin-session") !== "true";
+  });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -53,8 +59,12 @@ export default function AdminPage() {
     const pending = state.submissions.filter((item) => ["pending_review", "submitted"].includes(item.status)).length;
     const completed = rows.filter((row) => row.progress.isNewstartComplete).length;
     const final = rows.filter((row) => row.progress.finalVerified).length;
-    return { pending, completed, final };
+    const average = rows.length
+      ? Math.round(rows.reduce((sum, row) => sum + row.progress.score, 0) / rows.length)
+      : 0;
+    return { pending, completed, final, average };
   }, [rows, state.submissions]);
+  const scoreRows = [...rows].sort((a, b) => b.progress.score - a.progress.score);
 
   async function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -127,16 +137,17 @@ export default function AdminPage() {
       <AdminNav />
       <div className="space-y-5 pb-20">
         <div className="rounded-md border-2 border-ink bg-night p-5 text-paper shadow-cut">
-          <p className="text-xs font-black tracking-[0.18em] text-citrus">운영판</p>
-          <h1 className="mt-2 text-3xl font-black">운영본부 대시보드</h1>
-          <p className="mt-1 text-sm text-paper/70">검토가 필요한 제출과 팀별 미션 진행 상황을 한눈에 확인하세요.</p>
+          <p className="text-xs font-black tracking-[0.18em] text-citrus">운영본부</p>
+          <h1 className="mt-2 text-3xl font-black">진행 상황 한눈에 보기</h1>
+          <p className="mt-1 text-sm text-paper/70">노트북에서 팀별 점수, 제출 검토, 미션 참여 상태를 빠르게 확인합니다.</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[
             ["전체 팀", state.teams.length],
             ["검토 필요 제출", stats.pending],
             ["최종 인증 완료", stats.final],
-            ["완주 팀", stats.completed]
+            ["완주 팀", stats.completed],
+            ["평균 점수", formatScore(stats.average)]
           ].map(([label, value]) => (
             <Card key={label as string}>
               <div className="text-xs font-bold text-ink/55">{label}</div>
@@ -144,10 +155,51 @@ export default function AdminPage() {
             </Card>
           ))}
         </div>
+
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-black">팀별 미션 진행 현황</h2>
+              <h2 className="text-xl font-black">팀별 점수 현황</h2>
+              <p className="mt-1 text-sm text-ink/60">운영 중 순위, 추첨권, 미션 완료 수를 한 화면에서 봅니다.</p>
+            </div>
+            <Button variant="secondary" onClick={() => router.push("/admin/teams")}>
+              팀 관리로 이동
+            </Button>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-[980px] w-full border-separate border-spacing-y-1 text-left text-sm">
+              <thead>
+                <tr className="text-xs text-ink/55">
+                  <th className="rounded-l-md bg-paper px-3 py-2">순위</th>
+                  <th className="bg-paper px-3 py-2">팀</th>
+                  <th className="bg-paper px-3 py-2 text-right">점수</th>
+                  <th className="bg-paper px-3 py-2 text-right">추첨권</th>
+                  <th className="bg-paper px-3 py-2 text-right">미션</th>
+                  <th className="bg-paper px-3 py-2 text-right">테마</th>
+                  <th className="rounded-r-md bg-paper px-3 py-2">최종</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scoreRows.map(({ team, progress }, index) => (
+                  <tr key={team.id} className="font-bold">
+                    <td className="rounded-l-md bg-white px-3 py-2">{index + 1}</td>
+                    <td className="bg-white px-3 py-2">{team.teamNumber}번 · {team.name}</td>
+                    <td className="bg-white px-3 py-2 text-right">{formatScore(progress.score)}</td>
+                    <td className="bg-white px-3 py-2 text-right">{progress.tickets}장</td>
+                    <td className="bg-white px-3 py-2 text-right">{progress.completedMissionCodes.length}/{state.missions.length}</td>
+                    <td className="bg-white px-3 py-2 text-right">{progress.clearedThemes.length}/8</td>
+                    <td className="rounded-r-md bg-white px-3 py-2">{progress.finalVerified ? "완료" : "대기"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">팀별 미션 진행 현황</h2>
               <p className="mt-1 text-sm text-ink/60">팀 행을 따라가며 완료·검토 필요·미참여 상태를 확인합니다.</p>
             </div>
             <Button variant="secondary" onClick={() => router.push("/admin/submissions")}>
@@ -155,7 +207,7 @@ export default function AdminPage() {
             </Button>
           </div>
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-[980px] border-separate border-spacing-1 text-left text-xs">
+            <table className="min-w-[1320px] w-full border-separate border-spacing-1 text-left text-xs">
               <thead>
                 <tr>
                   <th className="sticky left-0 z-10 rounded-md bg-white px-3 py-2 text-sm">팀</th>

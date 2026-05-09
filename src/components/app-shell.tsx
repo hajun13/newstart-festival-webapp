@@ -75,7 +75,7 @@ export function AppShell({
     <div className="min-h-screen bg-paper text-ink">
       <div className="festival-ribbon h-2" />
       <header className="sticky top-0 z-20 border-b-2 border-ink/15 bg-paper/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div className={`mx-auto flex items-center justify-between px-4 py-3 ${mode === "admin" ? "max-w-[1680px] lg:px-6" : "max-w-6xl"}`}>
           <Link href={mode === "admin" ? "/admin" : "/dashboard"} className="leading-tight">
             <span className="block text-[10px] font-black tracking-[0.28em] text-clay">
               2026 서중한합회
@@ -105,7 +105,7 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <main className={`mx-auto px-4 py-6 ${mode === "admin" ? "max-w-[1680px] lg:px-6" : "max-w-6xl"}`}>{children}</main>
       {mode === "participant" ? (
         <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-ink/10 bg-white sm:hidden">
           <div className="grid grid-cols-3">

@@ -92,7 +92,7 @@ export default function AdminTeamsPage() {
   });
 
   const rows = buildTeamRows(state).filter((row) =>
-    `${row.team.teamNumber} ${row.team.name} ${row.team.loginCode}`.includes(query)
+    `${row.team.teamNumber} ${row.team.name} ${row.team.loginCode} ${row.team.churchName}`.includes(query)
   );
   const undoneManualLogIds = new Set(
     state.auditLogs
@@ -314,7 +314,7 @@ export default function AdminTeamsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-black">팀 관리</h1>
-            <p className="mt-1 text-sm text-ink/60">팀 등록, 코드 수정, 점수 조정과 되돌리기를 한곳에서 처리합니다.</p>
+            <p className="mt-1 text-sm text-ink/60">팀 이름은 교회명으로 사용합니다. 노트북 화면에서 등록, 수정, 점수 조정을 빠르게 처리합니다.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={exportTeams}><Download size={16} /> 팀 CSV</Button>
@@ -326,8 +326,13 @@ export default function AdminTeamsPage() {
         {message ? <div className="rounded-md bg-citrus/30 p-3 text-sm font-bold">{message}</div> : null}
 
         <Card>
-          <h2 className="text-xl font-black">팀 추가</h2>
-          <form className="mt-4 grid gap-2 lg:grid-cols-[100px_1fr_1fr_1fr_100px_auto]" onSubmit={addTeam}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">팀 추가</h2>
+              <p className="mt-1 text-sm text-ink/60">교회명을 팀 이름으로 입력하고, 코드는 비우면 자동으로 만들어집니다.</p>
+            </div>
+          </div>
+          <form className="mt-4 grid gap-2 lg:grid-cols-[90px_1.2fr_1fr_1fr_90px_auto]" onSubmit={addTeam}>
             <Input
               type="number"
               aria-label="새 팀 번호"
@@ -338,8 +343,8 @@ export default function AdminTeamsPage() {
               }}
             />
             <Input
-              aria-label="새 팀 이름"
-              placeholder="팀 이름"
+              aria-label="새 교회명"
+              placeholder="교회명(팀 이름)"
               value={newTeam.name}
               onChange={(event) => setNewTeam((current) => ({ ...current, name: event.target.value }))}
             />
@@ -350,8 +355,8 @@ export default function AdminTeamsPage() {
               onChange={(event) => setNewTeam((current) => ({ ...current, loginCode: event.target.value }))}
             />
             <Input
-              aria-label="새 팀 교회"
-              placeholder="교회/소속"
+              aria-label="새 팀 비고"
+              placeholder="비고/담당자"
               value={newTeam.churchName}
               onChange={(event) => setNewTeam((current) => ({ ...current, churchName: event.target.value }))}
             />
@@ -366,149 +371,176 @@ export default function AdminTeamsPage() {
           </form>
         </Card>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_180px]">
-          <Input placeholder="팀 번호, 이름, 코드 검색" value={query} onChange={(event) => setQuery(event.target.value)} />
-          <div className="rounded-md bg-paper px-3 py-2 text-sm font-bold">표시 {rows.length}팀</div>
-        </div>
+        <Card>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">팀별 점수와 운영 조정</h2>
+              <p className="mt-1 text-sm text-ink/60">행마다 교회명, 코드, 점수, 조정 내역을 바로 확인하고 수정합니다.</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[360px_110px]">
+              <Input placeholder="번호, 교회명, 코드 검색" value={query} onChange={(event) => setQuery(event.target.value)} />
+              <div className="rounded-md bg-paper px-3 py-2 text-sm font-bold">표시 {rows.length}팀</div>
+            </div>
+          </div>
 
-        <div className="grid gap-3">
-          {rows.map(({ team, progress }) => {
-            const draft = draftFor(team);
-            const adjustment = adjustmentFor(team.id);
-            const manualLogs = state.auditLogs
-              .filter((log) => log.action === "manual_score_adjust" && log.entityId === team.id)
-              .slice(0, 3);
-            const awards = state.adminAwards.filter((award) => award.teamId === team.id);
-            const hiddenAward = awards.find((award) => award.awardType === "hidden_staff");
-
-            return (
-              <Card key={team.id}>
-                <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <h2 className="text-xl font-black">{team.teamNumber}번 · {team.name}</h2>
-                        <p className="mt-1 text-sm text-ink/65">
-                          {formatScore(progress.score)} · 추첨권 {progress.tickets}장 · 미션 {progress.completedMissionCodes.length}/{state.missions.length} · 최종 {progress.finalVerified ? "완료" : "대기"}
-                        </p>
-                      </div>
-                      <Button variant="secondary" onClick={() => saveTeam(team)}>
-                        팀 정보 저장
-                      </Button>
-                    </div>
-
-                    <div className="grid gap-2 md:grid-cols-5">
-                      <Input
-                        type="number"
-                        aria-label={`${team.name} 팀 번호`}
-                        value={draft.teamNumber}
-                        onChange={(event) => updateDraft(team, { teamNumber: Number(event.target.value) })}
-                      />
-                      <Input
-                        aria-label={`${team.name} 팀 이름`}
-                        value={draft.name}
-                        onChange={(event) => updateDraft(team, { name: event.target.value })}
-                      />
-                      <Input
-                        aria-label={`${team.name} 팀 코드`}
-                        value={draft.loginCode}
-                        onChange={(event) => updateDraft(team, { loginCode: event.target.value })}
-                      />
-                      <Input
-                        aria-label={`${team.name} 교회`}
-                        value={draft.churchName}
-                        onChange={(event) => updateDraft(team, { churchName: event.target.value })}
-                      />
-                      <Input
-                        type="number"
-                        aria-label={`${team.name} 인원`}
-                        value={draft.memberCount}
-                        onChange={(event) => updateDraft(team, { memberCount: Number(event.target.value) })}
-                      />
-                    </div>
-
-                    <div className="grid gap-2 rounded-md bg-paper p-3 lg:grid-cols-[120px_1fr_auto]">
-                      <Input
-                        type="number"
-                        aria-label={`${team.name} 점수 조정`}
-                        value={adjustment.delta}
-                        onChange={(event) => updateAdjustment(team.id, { delta: Number(event.target.value) })}
-                      />
-                      <Input
-                        aria-label={`${team.name} 점수 조정 사유`}
-                        placeholder="조정 사유를 입력하세요"
-                        value={adjustment.note}
-                        onChange={(event) => updateAdjustment(team.id, { note: event.target.value })}
-                      />
-                      <Button variant="secondary" onClick={() => adjustScore(team)}>
-                        점수 조정 저장
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button disabled={Boolean(hiddenAward)} onClick={() => grantHiddenStaff(team)}>
-                        {hiddenAward ? "숨은 운영진 지급됨" : "숨은 운영진 +50"}
-                      </Button>
-                      <Input
-                        className="max-w-xs"
-                        placeholder={`삭제하려면 ${team.name} 입력`}
-                        value={deleteConfirm[team.id] ?? ""}
-                        onChange={(event) =>
-                          setDeleteConfirm((current) => ({ ...current, [team.id]: event.target.value }))
-                        }
-                      />
-                      <Button variant="danger" onClick={() => deleteTeam(team)}>
-                        <Trash2 size={16} /> 팀 삭제
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 rounded-md border border-ink/10 bg-linen p-3">
-                    <h3 className="font-black">최근 조정 내역</h3>
-                    {manualLogs.map((log) => {
-                      const delta = manualDelta(log);
-                      const undone = undoneManualLogIds.has(log.id);
-                      return (
-                        <div key={log.id} className="rounded-md bg-white p-3 text-sm">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-black">{delta > 0 ? "+" : ""}{delta}점</span>
-                            <Button
-                              variant="quiet"
-                              className="min-h-8 px-2 text-xs"
-                              disabled={undone}
-                              onClick={() => undoManual(team, log.id)}
-                            >
-                              <RotateCcw size={14} /> {undone ? "되돌림" : "되돌리기"}
-                            </Button>
-                          </div>
-                          <p className="mt-1 text-xs text-ink/60">{manualNote(log)}</p>
-                        </div>
-                      );
-                    })}
-                    {awards.map((award) => (
-                      <div key={award.id} className="rounded-md bg-white p-3 text-sm">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-black">{award.title} · +{award.points}점</span>
-                          <Button
-                            variant="quiet"
-                            className="min-h-8 px-2 text-xs"
-                            onClick={() => undoAward(team, award.id)}
-                          >
-                            <RotateCcw size={14} /> 되돌리기
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-[1560px] w-full border-separate border-spacing-y-1 text-left text-xs">
+              <thead>
+                <tr className="text-ink/55">
+                  <th className="sticky left-0 z-10 rounded-l-md bg-paper px-2 py-2">번호</th>
+                  <th className="bg-paper px-2 py-2">교회명(팀 이름)</th>
+                  <th className="bg-paper px-2 py-2">로그인 코드</th>
+                  <th className="bg-paper px-2 py-2">비고</th>
+                  <th className="bg-paper px-2 py-2">인원</th>
+                  <th className="bg-paper px-2 py-2 text-right">점수</th>
+                  <th className="bg-paper px-2 py-2 text-right">추첨권</th>
+                  <th className="bg-paper px-2 py-2">점수 조정</th>
+                  <th className="bg-paper px-2 py-2">최근 조정</th>
+                  <th className="rounded-r-md bg-paper px-2 py-2">관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(({ team, progress }) => {
+                  const draft = draftFor(team);
+                  const adjustment = adjustmentFor(team.id);
+                  const manualLogs = state.auditLogs
+                    .filter((log) => log.action === "manual_score_adjust" && log.entityId === team.id)
+                    .slice(0, 2);
+                  const awards = state.adminAwards.filter((award) => award.teamId === team.id);
+                  const hiddenAward = awards.find((award) => award.awardType === "hidden_staff");
+                  return (
+                    <tr key={team.id} className="align-top">
+                      <td className="sticky left-0 z-10 rounded-l-md bg-white px-2 py-2">
+                        <Input
+                          type="number"
+                          aria-label={`${team.name} 팀 번호`}
+                          className="min-h-9 w-20 px-2 text-sm"
+                          value={draft.teamNumber}
+                          onChange={(event) => updateDraft(team, { teamNumber: Number(event.target.value) })}
+                        />
+                      </td>
+                      <td className="bg-white px-2 py-2">
+                        <Input
+                          aria-label={`${team.name} 교회명`}
+                          className="min-h-9 min-w-[220px] px-2 text-sm font-bold"
+                          value={draft.name}
+                          onChange={(event) => updateDraft(team, { name: event.target.value })}
+                        />
+                      </td>
+                      <td className="bg-white px-2 py-2">
+                        <Input
+                          aria-label={`${team.name} 팀 코드`}
+                          className="min-h-9 min-w-[160px] px-2 font-mono text-sm"
+                          value={draft.loginCode}
+                          onChange={(event) => updateDraft(team, { loginCode: event.target.value })}
+                        />
+                      </td>
+                      <td className="bg-white px-2 py-2">
+                        <Input
+                          aria-label={`${team.name} 비고`}
+                          className="min-h-9 min-w-[160px] px-2 text-sm"
+                          value={draft.churchName}
+                          onChange={(event) => updateDraft(team, { churchName: event.target.value })}
+                        />
+                      </td>
+                      <td className="bg-white px-2 py-2">
+                        <Input
+                          type="number"
+                          aria-label={`${team.name} 인원`}
+                          className="min-h-9 w-20 px-2 text-sm"
+                          value={draft.memberCount}
+                          onChange={(event) => updateDraft(team, { memberCount: Number(event.target.value) })}
+                        />
+                      </td>
+                      <td className="bg-white px-2 py-3 text-right text-base font-black">{formatScore(progress.score)}</td>
+                      <td className="bg-white px-2 py-3 text-right font-black">{progress.tickets}장</td>
+                      <td className="bg-white px-2 py-2">
+                        <div className="grid min-w-[360px] grid-cols-[80px_1fr_auto] gap-1">
+                          <Input
+                            type="number"
+                            aria-label={`${team.name} 점수 조정`}
+                            className="min-h-9 px-2 text-sm"
+                            value={adjustment.delta}
+                            onChange={(event) => updateAdjustment(team.id, { delta: Number(event.target.value) })}
+                          />
+                          <Input
+                            aria-label={`${team.name} 점수 조정 사유`}
+                            className="min-h-9 px-2 text-sm"
+                            placeholder="사유"
+                            value={adjustment.note}
+                            onChange={(event) => updateAdjustment(team.id, { note: event.target.value })}
+                          />
+                          <Button variant="secondary" className="min-h-9 px-2 text-xs" onClick={() => adjustScore(team)}>
+                            점수 적용
                           </Button>
                         </div>
-                        {award.note ? <p className="mt-1 text-xs text-ink/60">{award.note}</p> : null}
-                      </div>
-                    ))}
-                    {!manualLogs.length && !awards.length ? (
-                      <p className="rounded-md bg-white p-3 text-sm text-ink/55">아직 조정 내역이 없습니다.</p>
-                    ) : null}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                      </td>
+                      <td className="bg-white px-2 py-2">
+                        <div className="min-w-[240px] space-y-1">
+                          {manualLogs.map((log) => {
+                            const delta = manualDelta(log);
+                            const undone = undoneManualLogIds.has(log.id);
+                            return (
+                              <div key={log.id} className="flex items-center justify-between gap-2 rounded-md bg-paper px-2 py-1">
+                                <span className="truncate font-bold">{delta > 0 ? "+" : ""}{delta}점 · {manualNote(log)}</span>
+                                <Button
+                                  variant="quiet"
+                                  className="min-h-7 px-1 text-[11px]"
+                                  disabled={undone}
+                                  onClick={() => undoManual(team, log.id)}
+                                >
+                                  <RotateCcw size={12} /> {undone ? "완료" : "취소"}
+                                </Button>
+                              </div>
+                            );
+                          })}
+                          {awards.map((award) => (
+                            <div key={award.id} className="flex items-center justify-between gap-2 rounded-md bg-citrus/25 px-2 py-1">
+                              <span className="truncate font-bold">보너스 +{award.points}</span>
+                              <Button
+                                variant="quiet"
+                                className="min-h-7 px-1 text-[11px]"
+                                onClick={() => undoAward(team, award.id)}
+                              >
+                                <RotateCcw size={12} /> 취소
+                              </Button>
+                            </div>
+                          ))}
+                          {!manualLogs.length && !awards.length ? <span className="text-ink/45">기록 없음</span> : null}
+                        </div>
+                      </td>
+                      <td className="rounded-r-md bg-white px-2 py-2">
+                        <div className="flex min-w-[260px] flex-wrap gap-1">
+                          <Button variant="secondary" className="min-h-9 px-2 text-xs" onClick={() => saveTeam(team)}>
+                            정보 저장
+                          </Button>
+                          <Button
+                            className="min-h-9 px-2 text-xs"
+                            disabled={Boolean(hiddenAward)}
+                            onClick={() => grantHiddenStaff(team)}
+                          >
+                            {hiddenAward ? "보너스 완료" : "보너스 +50"}
+                          </Button>
+                          <Input
+                            className="min-h-9 w-40 px-2 text-xs"
+                            placeholder="삭제 확인명"
+                            value={deleteConfirm[team.id] ?? ""}
+                            onChange={(event) =>
+                              setDeleteConfirm((current) => ({ ...current, [team.id]: event.target.value }))
+                            }
+                          />
+                          <Button variant="danger" className="min-h-9 px-2 text-xs" onClick={() => deleteTeam(team)}>
+                            <Trash2 size={14} /> 삭제
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
     </AppShell>
   );

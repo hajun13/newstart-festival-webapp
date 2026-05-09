@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { hasAdminSession, setAdminSession, syncStateFromServer } from "@/lib/state";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
@@ -15,7 +16,8 @@ const links = [
 ];
 
 export function AdminNav() {
-  const [active, setActive] = useState(false);
+  const pathname = usePathname();
+  const [active, setActive] = useState(() => hasAdminSession());
 
   useEffect(() => {
     setActive(hasAdminSession());
@@ -32,10 +34,13 @@ export function AdminNav() {
   if (!active) return null;
 
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-2">
+    <div className="sticky top-[64px] z-10 mb-5 flex flex-wrap items-center gap-2 border-b border-ink/10 bg-paper/95 py-3 backdrop-blur">
       {links.map(([href, label]) => (
         <Link key={href} href={href}>
-          <Button variant="secondary" className="min-h-9 px-3 text-xs">
+          <Button
+            variant={pathname === href ? "primary" : "secondary"}
+            className="min-h-9 px-3 text-xs shadow-none"
+          >
             {label}
           </Button>
         </Link>
