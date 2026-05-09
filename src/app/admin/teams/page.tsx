@@ -461,7 +461,7 @@ export default function AdminTeamsPage() {
             <table className="min-w-[1280px] w-full border-separate border-spacing-y-1 text-left text-xs">
               <thead>
                 <tr className="text-ink/55">
-                  <th className="sticky left-0 z-10 rounded-l-md bg-paper px-2 py-2">번호</th>
+                  <th className="sticky left-0 z-[1] rounded-l-md bg-paper px-2 py-2">번호</th>
                   <th className="bg-paper px-2 py-2">교회명(팀 이름)</th>
                   <th className="bg-paper px-2 py-2">로그인 코드</th>
                   <th className="bg-paper px-2 py-2">인원</th>
@@ -483,7 +483,7 @@ export default function AdminTeamsPage() {
                   const hiddenAward = awards.find((award) => award.awardType === "hidden_staff");
                   return (
                     <tr key={team.id} className="align-top">
-                      <td className="sticky left-0 z-10 rounded-l-md bg-white px-2 py-2">
+                      <td className="sticky left-0 z-[1] rounded-l-md bg-white px-2 py-2">
                         <Input
                           type="number"
                           aria-label={`${team.name} 팀 번호`}
