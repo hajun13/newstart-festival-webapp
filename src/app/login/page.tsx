@@ -23,12 +23,16 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code })
       });
-      const result = (await response.json()) as { ok: boolean; team?: { id: string }; message?: string };
+      const result = (await response.json()) as {
+        ok: boolean;
+        team?: { id: string; name: string };
+        message?: string;
+      };
       if (!response.ok || !result.team) {
         setMessage(result.message ?? "팀 코드를 확인해 주세요.");
         return;
       }
-      setActiveTeam(result.team.id);
+      setActiveTeam(result.team.id, result.team.name);
       router.push("/dashboard");
       return;
     }
@@ -37,7 +41,7 @@ export default function LoginPage() {
       setMessage("팀 코드를 확인해 주세요.");
       return;
     }
-    setActiveTeam(team.id);
+    setActiveTeam(team.id, team.name);
     router.push("/dashboard");
   }
 
@@ -59,7 +63,7 @@ export default function LoginPage() {
             찾아라
           </h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-paper/78">
-            팀 코드로 입장해 캠퍼스 미션, 히든 QR, 스태프 챌린지를 해결하세요.
+            팀 코드로 입장해 캠퍼스 미션, 히든 코드, 스태프 챌린지를 해결하세요.
             최종 목적지는 모든 테마를 열었을 때 공개됩니다.
           </p>
         </div>

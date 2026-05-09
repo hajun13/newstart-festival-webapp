@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { THEME_LABELS } from "@/lib/scoring/code-pieces";
 import { formatScore } from "@/lib/utils";
-import { getActiveTeamId, getTeamProgress, loadState, requireTeam } from "@/lib/state";
+import { clearActiveTeam, getActiveTeamId, getTeamProgress, loadState, requireTeam } from "@/lib/state";
 import type { AppState, Team } from "@/lib/types";
 import { Compass, KeyRound, LogOut, Map, Ticket, Trophy } from "lucide-react";
 import Link from "next/link";
@@ -133,15 +133,16 @@ export default function DashboardPage() {
             <ul className="mt-3 space-y-2 text-sm">
               <li>완주 보너스: {progress.isNewstartComplete ? "100점 반영" : "대기"}</li>
               <li>올클리어 보너스: {progress.isAllClear ? "200점 반영" : "대기"}</li>
-              <li>히든 QR 점수 인정: {progress.easterAwardedCount}/3</li>
+              <li>히든 코드 점수 인정: {progress.easterAwardedCount}/3</li>
               <li>최종 인증: {progress.finalVerified ? "완료" : "미완료"}</li>
             </ul>
           </Card>
           <Button
             variant="quiet"
             className="w-full"
-            onClick={() => {
-              localStorage.removeItem("newstart-active-team-id");
+            onClick={async () => {
+              await fetch("/api/logout", { method: "POST" }).catch(() => undefined);
+              clearActiveTeam();
               router.push("/login");
             }}
           >

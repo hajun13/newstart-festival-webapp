@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { hasAdminSession, setAdminSession } from "@/lib/state";
+import { hasAdminSession, setAdminSession, syncStateFromServer } from "@/lib/state";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,17 @@ export function AdminNav() {
   const router = useRouter();
   const [active, setActive] = useState(false);
 
-  useEffect(() => setActive(hasAdminSession()), []);
+  useEffect(() => {
+    setActive(hasAdminSession());
+    fetch("/api/admin/session", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((result: { ok: boolean }) => {
+        setActive(result.ok);
+        setAdminSession(result.ok);
+        if (result.ok) syncStateFromServer().catch(() => undefined);
+      })
+      .catch(() => undefined);
+  }, []);
 
   if (!active) return null;
 
@@ -35,7 +45,8 @@ export function AdminNav() {
       <Button
         variant="quiet"
         className="min-h-9 px-3 text-xs"
-        onClick={() => {
+        onClick={async () => {
+          await fetch("/api/admin/logout", { method: "POST" }).catch(() => undefined);
           setAdminSession(false);
           router.push("/admin");
         }}

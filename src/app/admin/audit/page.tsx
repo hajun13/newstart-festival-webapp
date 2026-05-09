@@ -3,13 +3,13 @@
 import { AdminNav } from "@/components/admin-nav";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
-import { loadState } from "@/lib/state";
+import { useAdminState } from "@/lib/admin/use-admin-state";
 
 export default function AdminAuditPage() {
-  const state = loadState();
+  const [state] = useAdminState();
 
   return (
-    <AppShell>
+    <AppShell mode="admin">
       <AdminNav />
       <div className="space-y-4 pb-20">
         <h1 className="text-3xl font-black">감사 로그</h1>

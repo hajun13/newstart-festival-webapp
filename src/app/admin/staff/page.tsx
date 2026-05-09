@@ -5,11 +5,12 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { loadState, saveState, staffApproveByTeamMission } from "@/lib/state";
+import { useAdminState } from "@/lib/admin/use-admin-state";
+import { saveState, staffApproveByTeamMission } from "@/lib/state";
 import { useState } from "react";
 
 export default function AdminStaffPage() {
-  const [state, setState] = useState(loadState());
+  const [state, setState] = useAdminState();
   const [teamQuery, setTeamQuery] = useState("1");
   const [missionCode, setMissionCode] = useState("WTR-80");
   const staffMissions = state.missions.filter((mission) => mission.type === "staff");
@@ -28,7 +29,7 @@ export default function AdminStaffPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell mode="admin">
       <AdminNav />
       <div className="space-y-4 pb-20">
         <h1 className="text-3xl font-black">스태프 미션 승인</h1>

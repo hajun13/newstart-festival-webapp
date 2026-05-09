@@ -1,17 +1,17 @@
 # NEWSTART Festival Webapp
 
-2026 하계 청소년 페스티벌 **NEWSTART 생명의 열쇠를 찾아라** 운영 웹앱입니다. 공통 QR로 접속한 뒤 팀 코드 로그인, 현장 미션 코드 입력, 인증 제출, 스태프 승인, 최종 홍명기홀 인증까지 행사 당일 운영 흐름을 다룹니다.
+2026 서중한합회 청소년 페스티벌 **NEWSTART 생명의 열쇠를 찾아라** 운영 웹앱입니다. 팀 코드 로그인, 현장 미션 코드 입력, 인증 제출, 스태프 승인, 최종 장소 인증까지 행사 당일 운영 흐름을 다룹니다.
 
 ## 구현 범위
 
 - Next.js 15 + TypeScript + Tailwind CSS
 - shadcn/ui 스타일의 자체 UI 컴포넌트
 - 팀 코드 기반 로그인
-- 30개 팀, 16개 공식 미션, 10개 히든 QR seed
+- 30개 팀, 16개 공식 미션, 10개 히든 코드 seed
 - 참가자 페이지: `/login`, `/dashboard`, `/code`, `/mission/[code]`, `/easter/[code]`, `/final`
 - 관리자 페이지: `/admin`, `/admin/submissions`, `/admin/staff`, `/admin/teams`, `/admin/announcements`, `/admin/audit`
 - 중복 제출/중복 점수 방지, 테마 클리어, 완주 보너스, 올클리어 보너스, 추첨권 계산
-- 숨은 운영진 보너스 팀당 1회 제한, 히든 QR 팀당 3개 점수 제한
+- 숨은 운영진 보너스 팀당 1회 제한, 히든 코드 팀당 3개 점수 제한
 - CSV export, 수기 점수표 백업 스크립트
 - Unit, Playwright E2E, k6 load script 하네스
 
@@ -120,7 +120,7 @@ Vercel 권장 설정:
 
 - 30개 팀 코드가 인쇄물/운영표와 일치하는지 확인
 - 16개 미션 안내판 코드가 seed와 일치하는지 확인
-- 히든 QR 10개와 최종 QR URL 확인
+- 히든 코드 10개와 최종 장소 인증 흐름 확인
 - 휴대폰 5대 이상으로 로그인, 사진 제출, 스태프 승인 리허설
 - `/admin/teams` CSV export 다운로드 확인
 - 업로드 장애 시 카카오톡/구글폼 백업 링크 준비

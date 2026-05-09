@@ -7,7 +7,7 @@ export const missionsSeed: Mission[] = [
     code: "NUT-30",
     theme: "nutrition",
     themeLabel: THEME_LABELS.nutrition,
-    title: "영양 관련 QR 퀴즈",
+    title: "영양 미션 코드 퀴즈",
     description: "영양과 건강한 식습관에 관한 퀴즈를 풀어 생명의 식탁 첫 단서를 확인합니다.",
     points: 30,
     type: "quiz",
@@ -421,7 +421,7 @@ export const missionsSeed: Mission[] = [
     code: "AIR-30",
     theme: "air",
     themeLabel: THEME_LABELS.air,
-    title: "Air QR 퀴즈",
+    title: "Air 미션 코드 퀴즈",
     description: "공기와 호흡에 관한 수수께끼형 퀴즈를 풉니다.",
     points: 30,
     type: "quiz",
@@ -649,7 +649,7 @@ export function createEasterEggSeed(): EasterEgg[] {
     return {
       id: `egg-${String(eggNumber).padStart(2, "0")}`,
       code: `EGG-${String(eggNumber).padStart(2, "0")}`,
-      title: `숨겨진 축복 QR ${eggNumber}`,
+      title: `숨겨진 축복 코드 ${eggNumber}`,
       message: "숨겨진 축복을 발견했습니다. 팀당 최대 3개까지 점수로 인정됩니다.",
       points: 30,
       isActive: true

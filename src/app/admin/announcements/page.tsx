@@ -5,11 +5,12 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
-import { createAnnouncement, loadState, saveState, toggleAnnouncement } from "@/lib/state";
+import { useAdminState } from "@/lib/admin/use-admin-state";
+import { createAnnouncement, saveState, toggleAnnouncement } from "@/lib/state";
 import { useState } from "react";
 
 export default function AdminAnnouncementsPage() {
-  const [state, setState] = useState(loadState());
+  const [state, setState] = useAdminState();
   const [title, setTitle] = useState("NEWSTART 돌발 미션");
   const [body, setBody] = useState("운영본부 안내에 따라 지정 장소에서 팀 사진을 제출하세요.");
   const [type, setType] = useState<"notice" | "challenge">("notice");
@@ -36,7 +37,7 @@ export default function AdminAnnouncementsPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell mode="admin">
       <AdminNav />
       <div className="grid gap-4 pb-20 lg:grid-cols-[420px_1fr]">
         <Card>

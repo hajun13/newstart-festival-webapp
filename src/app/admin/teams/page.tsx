@@ -5,13 +5,13 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useAdminState } from "@/lib/admin/use-admin-state";
 import {
   adjustManualScore,
   buildCsv,
   buildTeamRows,
   getTeamProgress,
   grantAdminAward,
-  loadState,
   saveState
 } from "@/lib/state";
 import { formatScore } from "@/lib/utils";
@@ -29,7 +29,7 @@ function downloadCsv(filename: string, csv: string) {
 }
 
 export default function AdminTeamsPage() {
-  const [state, setState] = useState(loadState());
+  const [state, setState] = useAdminState();
   const [query, setQuery] = useState("");
   const [delta, setDelta] = useState(10);
   const rows = buildTeamRows(state).filter((row) => `${row.team.teamNumber} ${row.team.name}`.includes(query));
@@ -82,7 +82,7 @@ export default function AdminTeamsPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell mode="admin">
       <AdminNav />
       <div className="space-y-4 pb-20">
         <div className="flex flex-wrap items-center justify-between gap-3">

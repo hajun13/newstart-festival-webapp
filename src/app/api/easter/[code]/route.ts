@@ -22,7 +22,7 @@ export async function POST(
     return NextResponse.json({ ok: true, claim: result.claim, message: result.message });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, message: error instanceof Error ? error.message : "히든 QR 처리 실패" },
+      { ok: false, message: error instanceof Error ? error.message : "히든 코드 처리 실패" },
       { status: 400 }
     );
   }

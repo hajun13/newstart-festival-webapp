@@ -57,7 +57,7 @@ export default function FinalPage() {
             {progress?.isNewstartComplete ? "최종 장소 인증" : "마지막 장소는 아직 잠겨 있습니다"}
           </h1>
           <p className="mt-3 text-ink/70">
-            8개 테마를 모두 클리어한 팀만 마지막 QR 인증이 성공합니다. 성공 시 추첨권 2장이 추가되며 팀당 1회만 인정됩니다.
+            8개 테마를 모두 클리어한 팀만 최종 장소 인증이 성공합니다. 성공 시 추첨권 2장이 추가되며 팀당 1회만 인정됩니다.
           </p>
           {progress ? (
             <div className="mt-5 rounded-md bg-paper p-4">

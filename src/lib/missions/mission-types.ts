@@ -8,7 +8,7 @@ export const SUBMISSION_TYPE_LABELS: Record<SubmissionType, string> = {
   video_or_text: "텍스트/외부 제출 안내",
   staff: "스태프 승인",
   final: "최종 인증",
-  easter_qr: "히든 QR",
+  easter_qr: "히든 코드",
   admin_award: "관리자 보너스",
   announcement_challenge: "돌발 미션"
 };

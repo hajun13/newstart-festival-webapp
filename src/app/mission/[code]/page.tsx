@@ -27,13 +27,29 @@ async function fileToCompressedMarker(file: File): Promise<string> {
   return `${file.name}:${Math.min(file.size, 1024 * 1024)}:client-compressed`;
 }
 
+async function uploadMissionFile(input: { file: File; teamId: string; missionCode: string }) {
+  const formData = new FormData();
+  formData.set("teamId", input.teamId);
+  formData.set("missionCode", input.missionCode);
+  formData.set("file", input.file);
+  const response = await fetch("/api/uploads", {
+    method: "POST",
+    body: formData
+  });
+  const result = (await response.json()) as { ok: boolean; path?: string; message?: string };
+  if (!response.ok || !result.ok || !result.path) {
+    throw new Error(result.message ?? "파일 업로드 실패");
+  }
+  return result.path;
+}
+
 export default function MissionPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
   const [mission, setMission] = useState<Mission | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [text, setText] = useState("");
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -58,13 +74,16 @@ export default function MissionPage() {
     }
     setBusy(true);
     try {
+      const filePaths = usesRemoteState()
+        ? await Promise.all(files.map((file) => uploadMissionFile({ file, teamId, missionCode: mission.code })))
+        : await Promise.all(files.map(fileToCompressedMarker));
       const result = submitMission({
         state: loadState(),
         teamId,
         missionCode: mission.code,
         answerText: text,
         answerJson: { answers },
-        filePaths: files
+        filePaths
       });
       if (usesRemoteState()) {
         const response = await fetch("/api/submissions", {
@@ -75,7 +94,7 @@ export default function MissionPage() {
             missionCode: mission.code,
             answerText: text,
             answerJson: { answers },
-            filePaths: files
+            filePaths
           })
         });
         const remoteResult = (await response.json()) as { ok: boolean; message?: string };
@@ -201,16 +220,18 @@ export default function MissionPage() {
                     multiple={mission.type === "photo"}
                     onChange={async (event) => {
                       const selected = Array.from(event.currentTarget.files ?? []);
-                      try {
-                        setFiles(await Promise.all(selected.map(fileToCompressedMarker)));
-                        setMessage("이미지 압축 정책을 적용했습니다.");
-                      } catch (error) {
-                        setMessage(error instanceof Error ? error.message : "파일 처리 실패");
+                      const oversized = selected.find((file) => file.size > 4 * 1024 * 1024);
+                      if (oversized) {
+                        setFiles([]);
+                        setMessage("파일은 4MB 이하만 선택할 수 있습니다.");
+                        return;
                       }
+                      setFiles(selected);
+                      setMessage("이미지를 선택했습니다. 제출 시 운영 서버에 업로드됩니다.");
                     }}
                   />
                   <p className="mt-2 text-xs text-ink/60">
-                    클라이언트에서 4MB 초과 파일은 차단하고, 운영 권장 기준은 장당 1MB 이하입니다.
+                    4MB 초과 파일은 차단합니다. 제출 후 관리자가 원본 이미지를 확인할 수 있습니다.
                   </p>
                   {files.length ? <p className="mt-2 text-sm font-bold">{files.length}개 선택됨</p> : null}
                 </div>

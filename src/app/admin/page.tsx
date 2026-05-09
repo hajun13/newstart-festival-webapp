@@ -5,14 +5,18 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { buildTeamRows, loadState, setAdminSession, syncStateFromServer } from "@/lib/state";
+import { useAdminState } from "@/lib/admin/use-admin-state";
+import { buildTeamRows, setAdminSession, syncStateFromServer } from "@/lib/state";
 import { formatScore } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function AdminPage() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [active, setActive] = useState(false);
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/session")
@@ -22,12 +26,14 @@ export default function AdminPage() {
         if (result.ok) {
           setActive(true);
           setAdminSession(true);
+          const next = new URLSearchParams(window.location.search).get("next");
+          if (next?.startsWith("/admin/")) router.replace(next);
         }
       })
       .catch(() => undefined);
-  }, []);
+  }, [router]);
 
-  const state = loadState();
+  const [state] = useAdminState();
   const rows = buildTeamRows(state);
   const stats = useMemo(() => {
     const pending = state.submissions.filter((item) => item.status === "pending_review").length;
@@ -41,6 +47,8 @@ export default function AdminPage() {
 
   async function login(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setBusy(true);
+    setMessage("");
     const response = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -49,26 +57,40 @@ export default function AdminPage() {
     const result = (await response.json()) as { ok: boolean; message?: string };
     if (!response.ok || !result.ok) {
       setMessage(result.message ?? "관리자 비밀번호를 확인해 주세요.");
+      setBusy(false);
       return;
     }
     setAdminSession(true);
     setActive(true);
+    await syncStateFromServer().catch(() => undefined);
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next?.startsWith("/admin/")) router.replace(next);
+    setBusy(false);
   }
 
   if (!active) {
     return (
-      <AppShell>
+      <AppShell mode="admin">
         <div className="mx-auto max-w-md">
           <Card>
             <h1 className="text-2xl font-black">관리자 로그인</h1>
             <form className="mt-5 space-y-4" onSubmit={login}>
+              <label className="block text-sm font-black" htmlFor="admin-password">
+                관리자 비밀번호
+              </label>
               <Input
+                id="admin-password"
                 type="password"
                 value={password}
+                autoFocus
+                placeholder="운영본부 비밀번호"
+                disabled={busy}
                 onChange={(event) => setPassword(event.target.value)}
               />
               {message ? <p className="text-sm font-bold text-coral">{message}</p> : null}
-              <Button className="w-full">관리자 진입</Button>
+              <Button className="w-full" disabled={busy}>
+                {busy ? "확인 중" : "관리자 진입"}
+              </Button>
             </form>
           </Card>
         </div>
@@ -77,7 +99,7 @@ export default function AdminPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell mode="admin">
       <AdminNav />
       <div className="space-y-5 pb-20">
         <div className="rounded-md border-2 border-ink bg-night p-5 text-paper shadow-cut">

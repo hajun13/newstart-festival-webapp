@@ -5,16 +5,42 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { loadState, saveState, setSubmissionStatus } from "@/lib/state";
+import { useAdminState } from "@/lib/admin/use-admin-state";
+import { saveState, setSubmissionStatus, syncStateFromServer, usesRemoteState } from "@/lib/state";
 import type { SubmissionStatus } from "@/lib/types";
 import { useState } from "react";
 
+function isStorageImagePath(path: string) {
+  return path.startsWith("mission-submissions/");
+}
+
 export default function AdminSubmissionsPage() {
-  const [state, setState] = useState(loadState());
+  const [state, setState] = useAdminState();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SubmissionStatus | "all">("all");
 
-  function mutate(next: typeof state) {
+  async function mutate(submissionId: string, nextStatus: Extract<SubmissionStatus, "approved" | "rejected" | "cancelled">) {
+    if (usesRemoteState()) {
+      const response = await fetch("/api/admin/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId,
+          status: nextStatus,
+          reviewedBy: "admin"
+        })
+      });
+      if (!response.ok) return;
+      setState(await syncStateFromServer());
+      return;
+    }
+    const next = setSubmissionStatus({
+        state,
+        submissionId,
+        status: nextStatus,
+        reviewedBy: "admin",
+        reviewNote: nextStatus === "approved" ? "관리자 승인" : nextStatus === "rejected" ? "관리자 반려" : "승인 취소"
+      });
     saveState(next);
     setState(next);
   }
@@ -27,7 +53,7 @@ export default function AdminSubmissionsPage() {
   });
 
   return (
-    <AppShell>
+    <AppShell mode="admin">
       <AdminNav />
       <div className="space-y-4 pb-20">
         <h1 className="text-3xl font-black">제출 검토</h1>
@@ -52,26 +78,55 @@ export default function AdminSubmissionsPage() {
                     <div className="font-black">{team?.name} · {mission?.code}</div>
                     <p className="text-sm text-ink/65">{mission?.title} · {submission.status} · {submission.awardedPoints}점</p>
                     <p className="mt-2 text-sm">{submission.answerText}</p>
-                    {submission.filePaths.length ? <p className="text-xs text-ink/55">파일 {submission.filePaths.length}개</p> : null}
+                    {submission.filePaths.length ? (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {submission.filePaths.map((path, index) =>
+                          isStorageImagePath(path) ? (
+                            <a
+                              key={`${submission.id}-${path}`}
+                              href={`/api/admin/files?path=${encodeURIComponent(path)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block rounded-md border border-ink/15 bg-paper p-2 text-xs font-bold hover:border-moss"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={`/api/admin/files?path=${encodeURIComponent(path)}`}
+                                alt={`${team?.name ?? "팀"} 제출 이미지 ${index + 1}`}
+                                className="mb-2 aspect-video w-full rounded object-cover"
+                              />
+                              원본 보기 {index + 1}
+                            </a>
+                          ) : (
+                            <div
+                              key={`${submission.id}-${path}`}
+                              className="rounded-md border border-ink/15 bg-paper p-3 text-xs font-bold text-ink/60"
+                            >
+                              이전 임시 제출 파일 {index + 1}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
-                      onClick={() => mutate(setSubmissionStatus({ state, submissionId: submission.id, status: "approved", reviewedBy: "admin", reviewNote: "관리자 승인" }))}
+                      onClick={() => mutate(submission.id, "approved")}
                     >
                       승인
                     </Button>
                     <Button
                       type="button"
                       variant="danger"
-                      onClick={() => mutate(setSubmissionStatus({ state, submissionId: submission.id, status: "rejected", reviewedBy: "admin", reviewNote: "관리자 반려" }))}
+                      onClick={() => mutate(submission.id, "rejected")}
                     >
                       반려
                     </Button>
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => mutate(setSubmissionStatus({ state, submissionId: submission.id, status: "cancelled", reviewedBy: "admin", reviewNote: "승인 취소" }))}
+                      onClick={() => mutate(submission.id, "cancelled")}
                     >
                       승인 취소
                     </Button>

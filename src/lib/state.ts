@@ -9,6 +9,7 @@ import { createEasterEggSeed, createTeamsSeed, missionsSeed } from "@/lib/missio
 
 const STORAGE_KEY = "newstart-festival-state-v1";
 const TEAM_SESSION_KEY = "newstart-active-team-id";
+const TEAM_NAME_KEY = "newstart-active-team-name";
 const ADMIN_SESSION_KEY = "newstart-admin-session";
 
 function now() {
@@ -112,8 +113,11 @@ export function resetState() {
   return state;
 }
 
-export function setActiveTeam(teamId: string) {
-  if (isBrowser()) window.localStorage.setItem(TEAM_SESSION_KEY, teamId);
+export function setActiveTeam(teamId: string, teamName?: string) {
+  if (isBrowser()) {
+    window.localStorage.setItem(TEAM_SESSION_KEY, teamId);
+    if (teamName) window.localStorage.setItem(TEAM_NAME_KEY, teamName);
+  }
 }
 
 export function getActiveTeamId() {
@@ -121,7 +125,14 @@ export function getActiveTeamId() {
 }
 
 export function clearActiveTeam() {
-  if (isBrowser()) window.localStorage.removeItem(TEAM_SESSION_KEY);
+  if (isBrowser()) {
+    window.localStorage.removeItem(TEAM_SESSION_KEY);
+    window.localStorage.removeItem(TEAM_NAME_KEY);
+  }
+}
+
+export function getActiveTeamName() {
+  return isBrowser() ? window.localStorage.getItem(TEAM_NAME_KEY) : null;
 }
 
 export function setAdminSession(active: boolean) {
@@ -419,7 +430,7 @@ export function claimEasterEgg(state: AppState, teamId: string, code: string) {
   const egg = state.easterEggs.find(
     (item) => item.code.toUpperCase() === code.trim().toUpperCase() && item.isActive
   );
-  if (!egg) throw new Error("유효하지 않은 히든 QR입니다.");
+  if (!egg) throw new Error("유효하지 않은 히든 코드입니다.");
   const existing = state.easterEggClaims.find(
     (claim) => claim.teamId === teamId && claim.easterEggId === egg.id
   );
@@ -427,7 +438,7 @@ export function claimEasterEgg(state: AppState, teamId: string, code: string) {
     return {
       state,
       claim: existing,
-      message: "이미 획득한 히든 QR입니다. 점수는 중복 지급되지 않습니다."
+      message: "이미 획득한 히든 코드입니다. 점수는 중복 지급되지 않습니다."
     };
   }
   const awardedCount = state.easterEggClaims.filter(
