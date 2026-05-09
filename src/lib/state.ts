@@ -529,6 +529,29 @@ export function grantAdminAward(input: {
   };
 }
 
+export function undoAdminAward(input: {
+  state: AppState;
+  awardId: string;
+  actor: string;
+}) {
+  const award = input.state.adminAwards.find((item) => item.id === input.awardId);
+  if (!award) throw new Error("되돌릴 보너스를 찾을 수 없습니다.");
+  let next: AppState = {
+    ...input.state,
+    adminAwards: input.state.adminAwards.filter((item) => item.id !== input.awardId)
+  };
+  next = addAudit(next, {
+    actorType: "admin",
+    actorId: input.actor,
+    action: "admin_award_undo",
+    entityType: "admin_award",
+    entityId: award.id,
+    beforeData: award,
+    afterData: { removed: true }
+  });
+  return next;
+}
+
 export function adjustManualScore(input: {
   state: AppState;
   teamId: string;
@@ -553,6 +576,155 @@ export function adjustManualScore(input: {
     entityId: team.id,
     beforeData: team,
     afterData: { updatedTeam, note: input.note }
+  });
+  return next;
+}
+
+export function undoManualScoreAdjustment(input: {
+  state: AppState;
+  auditLogId: string;
+  actor: string;
+}) {
+  const log = input.state.auditLogs.find(
+    (item) => item.id === input.auditLogId && item.action === "manual_score_adjust"
+  );
+  if (!log) throw new Error("되돌릴 점수 조정 기록을 찾을 수 없습니다.");
+  const beforeTeam = log.beforeData as Team | undefined;
+  if (!beforeTeam?.id) throw new Error("점수 조정 이전 상태가 없습니다.");
+  const currentTeam = requireTeam(input.state, beforeTeam.id);
+  const restoredTeam: Team = {
+    ...currentTeam,
+    manualAdjustment: beforeTeam.manualAdjustment
+  };
+  let next: AppState = {
+    ...input.state,
+    teams: input.state.teams.map((item) => (item.id === restoredTeam.id ? restoredTeam : item))
+  };
+  next = addAudit(next, {
+    actorType: "admin",
+    actorId: input.actor,
+    action: "manual_score_undo",
+    entityType: "team",
+    entityId: restoredTeam.id,
+    beforeData: currentTeam,
+    afterData: { restoredTeam, sourceAuditLogId: input.auditLogId }
+  });
+  return next;
+}
+
+export function createTeam(input: {
+  state: AppState;
+  teamNumber: number;
+  name: string;
+  loginCode: string;
+  churchName?: string;
+  memberCount?: number;
+  actor: string;
+}) {
+  const loginCode = input.loginCode.trim().toUpperCase();
+  if (!input.teamNumber || input.teamNumber < 1) throw new Error("팀 번호를 확인해 주세요.");
+  if (!input.name.trim()) throw new Error("팀 이름을 입력해 주세요.");
+  if (!loginCode) throw new Error("팀 코드를 입력해 주세요.");
+  if (input.state.teams.some((team) => team.teamNumber === input.teamNumber)) {
+    throw new Error("이미 사용 중인 팀 번호입니다.");
+  }
+  if (input.state.teams.some((team) => team.loginCode.toUpperCase() === loginCode)) {
+    throw new Error("이미 사용 중인 팀 코드입니다.");
+  }
+  const team: Team = {
+    id: id("team"),
+    teamNumber: input.teamNumber,
+    name: input.name.trim(),
+    loginCode,
+    churchName: input.churchName?.trim() ?? "",
+    memberCount: input.memberCount ?? 0,
+    finalVerified: false,
+    manualAdjustment: 0
+  };
+  let next: AppState = {
+    ...input.state,
+    teams: [...input.state.teams, team].sort((a, b) => a.teamNumber - b.teamNumber)
+  };
+  next = addAudit(next, {
+    actorType: "admin",
+    actorId: input.actor,
+    action: "team_create",
+    entityType: "team",
+    entityId: team.id,
+    afterData: team
+  });
+  return next;
+}
+
+export function updateTeam(input: {
+  state: AppState;
+  teamId: string;
+  teamNumber: number;
+  name: string;
+  loginCode: string;
+  churchName?: string;
+  memberCount?: number;
+  actor: string;
+}) {
+  const team = requireTeam(input.state, input.teamId);
+  const loginCode = input.loginCode.trim().toUpperCase();
+  if (!input.teamNumber || input.teamNumber < 1) throw new Error("팀 번호를 확인해 주세요.");
+  if (!input.name.trim()) throw new Error("팀 이름을 입력해 주세요.");
+  if (!loginCode) throw new Error("팀 코드를 입력해 주세요.");
+  if (input.state.teams.some((item) => item.id !== team.id && item.teamNumber === input.teamNumber)) {
+    throw new Error("이미 사용 중인 팀 번호입니다.");
+  }
+  if (input.state.teams.some((item) => item.id !== team.id && item.loginCode.toUpperCase() === loginCode)) {
+    throw new Error("이미 사용 중인 팀 코드입니다.");
+  }
+  const updatedTeam: Team = {
+    ...team,
+    teamNumber: input.teamNumber,
+    name: input.name.trim(),
+    loginCode,
+    churchName: input.churchName?.trim() ?? "",
+    memberCount: input.memberCount ?? 0
+  };
+  let next: AppState = {
+    ...input.state,
+    teams: input.state.teams
+      .map((item) => (item.id === team.id ? updatedTeam : item))
+      .sort((a, b) => a.teamNumber - b.teamNumber)
+  };
+  next = addAudit(next, {
+    actorType: "admin",
+    actorId: input.actor,
+    action: "team_update",
+    entityType: "team",
+    entityId: team.id,
+    beforeData: team,
+    afterData: updatedTeam
+  });
+  return next;
+}
+
+export function deleteTeam(input: {
+  state: AppState;
+  teamId: string;
+  actor: string;
+}) {
+  const team = requireTeam(input.state, input.teamId);
+  let next: AppState = {
+    ...input.state,
+    teams: input.state.teams.filter((item) => item.id !== team.id),
+    submissions: input.state.submissions.filter((item) => item.teamId !== team.id),
+    easterEggClaims: input.state.easterEggClaims.filter((item) => item.teamId !== team.id),
+    adminAwards: input.state.adminAwards.filter((item) => item.teamId !== team.id),
+    announcementSubmissions: input.state.announcementSubmissions.filter((item) => item.teamId !== team.id)
+  };
+  next = addAudit(next, {
+    actorType: "admin",
+    actorId: input.actor,
+    action: "team_delete",
+    entityType: "team",
+    entityId: team.id,
+    beforeData: team,
+    afterData: { deleted: true }
   });
   return next;
 }

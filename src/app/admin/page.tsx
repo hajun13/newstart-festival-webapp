@@ -11,10 +11,23 @@ import { formatScore } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+function missionStatusLabel(status?: string) {
+  if (status === "approved") return "완료";
+  if (status === "pending_review" || status === "submitted") return "검토 필요";
+  return "미참여";
+}
+
+function missionStatusClass(status?: string) {
+  if (status === "approved") return "border-moss bg-moss text-paper";
+  if (status === "pending_review" || status === "submitted") return "border-coral bg-coral text-white";
+  return "border-ink/10 bg-paper text-ink/45";
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [active, setActive] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -29,20 +42,18 @@ export default function AdminPage() {
           const next = new URLSearchParams(window.location.search).get("next");
           if (next?.startsWith("/admin/")) router.replace(next);
         }
+        setCheckingSession(false);
       })
-      .catch(() => undefined);
+      .catch(() => setCheckingSession(false));
   }, [router]);
 
   const [state] = useAdminState();
   const rows = buildTeamRows(state);
   const stats = useMemo(() => {
-    const pending = state.submissions.filter((item) => item.status === "pending_review").length;
+    const pending = state.submissions.filter((item) => ["pending_review", "submitted"].includes(item.status)).length;
     const completed = rows.filter((row) => row.progress.isNewstartComplete).length;
     const final = rows.filter((row) => row.progress.finalVerified).length;
-    const average = rows.length
-      ? Math.round(rows.reduce((sum, row) => sum + row.progress.score, 0) / rows.length)
-      : 0;
-    return { pending, completed, final, average };
+    return { pending, completed, final };
   }, [rows, state.submissions]);
 
   async function login(event: React.FormEvent<HTMLFormElement>) {
@@ -66,6 +77,19 @@ export default function AdminPage() {
     const next = new URLSearchParams(window.location.search).get("next");
     if (next?.startsWith("/admin/")) router.replace(next);
     setBusy(false);
+  }
+
+  if (checkingSession) {
+    return (
+      <AppShell mode="admin">
+        <div className="mx-auto max-w-md">
+          <Card>
+            <h1 className="text-2xl font-black">운영자 확인 중</h1>
+            <p className="mt-2 text-sm text-ink/65">이미 로그인되어 있는지 확인하고 있습니다.</p>
+          </Card>
+        </div>
+      </AppShell>
+    );
   }
 
   if (!active) {
@@ -103,18 +127,16 @@ export default function AdminPage() {
       <AdminNav />
       <div className="space-y-5 pb-20">
         <div className="rounded-md border-2 border-ink bg-night p-5 text-paper shadow-cut">
-          <p className="text-xs font-black tracking-[0.18em] text-citrus">FESTIVAL CONTROL</p>
+          <p className="text-xs font-black tracking-[0.18em] text-citrus">운영판</p>
           <h1 className="mt-2 text-3xl font-black">운영본부 대시보드</h1>
-          <p className="mt-1 text-sm text-paper/70">실시간 운영 DB를 읽고, 승인/점수 변경은 관리자 인증 쿠키로만 저장됩니다.</p>
+          <p className="mt-1 text-sm text-paper/70">검토가 필요한 제출과 팀별 미션 진행 상황을 한눈에 확인하세요.</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["전체 팀", state.teams.length],
-            ["전체 제출", state.submissions.length],
-            ["승인 대기", stats.pending],
-            ["평균 점수", formatScore(stats.average)],
-            ["완주 팀", stats.completed],
-            ["최종 인증", stats.final]
+            ["검토 필요 제출", stats.pending],
+            ["최종 인증 완료", stats.final],
+            ["완주 팀", stats.completed]
           ].map(([label, value]) => (
             <Card key={label as string}>
               <div className="text-xs font-bold text-ink/55">{label}</div>
@@ -123,20 +145,54 @@ export default function AdminPage() {
           ))}
         </div>
         <Card>
-          <h2 className="font-black">미션별 제출 현황</h2>
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {state.missions.map((mission) => {
-              const count = state.submissions.filter((item) => item.missionId === mission.id).length;
-              const approved = state.submissions.filter(
-                (item) => item.missionId === mission.id && item.status === "approved"
-              ).length;
-              return (
-                <div key={mission.id} className="flex items-center justify-between rounded-md bg-paper p-3 text-sm">
-                  <span className="font-bold">{mission.code} {mission.title}</span>
-                  <span>{approved}/{count}</span>
-                </div>
-              );
-            })}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-black">팀별 미션 진행 현황</h2>
+              <p className="mt-1 text-sm text-ink/60">팀 행을 따라가며 완료·검토 필요·미참여 상태를 확인합니다.</p>
+            </div>
+            <Button variant="secondary" onClick={() => router.push("/admin/submissions")}>
+              제출 검토로 이동
+            </Button>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-[980px] border-separate border-spacing-1 text-left text-xs">
+              <thead>
+                <tr>
+                  <th className="sticky left-0 z-10 rounded-md bg-white px-3 py-2 text-sm">팀</th>
+                  <th className="rounded-md bg-paper px-3 py-2">점수</th>
+                  {state.missions.map((mission) => (
+                    <th key={mission.id} className="rounded-md bg-paper px-2 py-2 text-center">
+                      {mission.code}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(({ team, progress }) => (
+                  <tr key={team.id}>
+                    <th className="sticky left-0 z-10 rounded-md bg-white px-3 py-2 font-black">
+                      {team.teamNumber}번 · {team.name}
+                    </th>
+                    <td className="rounded-md bg-paper px-3 py-2 font-bold">{formatScore(progress.score)}</td>
+                    {state.missions.map((mission) => {
+                      const submission = state.submissions.find(
+                        (item) => item.teamId === team.id && item.missionId === mission.id
+                      );
+                      return (
+                        <td key={mission.id} className="px-1 py-1">
+                          <span
+                            className={`block rounded-md border px-2 py-1 text-center font-bold ${missionStatusClass(submission?.status)}`}
+                            title={`${mission.code} ${mission.title}`}
+                          >
+                            {missionStatusLabel(submission?.status)}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Card>
       </div>

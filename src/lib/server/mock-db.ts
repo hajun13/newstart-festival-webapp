@@ -1,18 +1,25 @@
 import { createDefaultState } from "@/lib/state";
 import type { AppState } from "@/lib/types";
 
-let state: AppState = createDefaultState();
+declare global {
+  var __newstartMockState: AppState | undefined;
+}
+
+function stateRef() {
+  globalThis.__newstartMockState ??= createDefaultState();
+  return globalThis.__newstartMockState;
+}
 
 export function getMockState() {
-  return state;
+  return stateRef();
 }
 
 export function setMockState(nextState: AppState) {
-  state = nextState;
-  return state;
+  globalThis.__newstartMockState = nextState;
+  return globalThis.__newstartMockState;
 }
 
 export function resetMockState() {
-  state = createDefaultState();
-  return state;
+  globalThis.__newstartMockState = createDefaultState();
+  return globalThis.__newstartMockState;
 }

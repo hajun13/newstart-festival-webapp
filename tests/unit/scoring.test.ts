@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ALL_CLEAR_BONUS, NEWSTART_COMPLETION_BONUS } from "@/lib/scoring/calculate-score";
-import { createDefaultState, getTeamProgress, setSubmissionStatus, submitMission } from "@/lib/state";
+import {
+  adjustManualScore,
+  createDefaultState,
+  getTeamProgress,
+  grantAdminAward,
+  setSubmissionStatus,
+  submitMission,
+  undoAdminAward,
+  undoManualScoreAdjustment
+} from "@/lib/state";
 
 function quizAnswers(state: ReturnType<typeof createDefaultState>, missionCode: string) {
   const mission = state.missions.find((item) => item.code === missionCode)!;
@@ -82,5 +91,67 @@ describe("scoring", () => {
       reviewedBy: "test"
     });
     expect(getTeamProgress(state, "team-01").score).toBe(0);
+  });
+
+  it("수동 점수 조정과 되돌리기를 반영한다", () => {
+    let state = createDefaultState();
+    state = adjustManualScore({
+      state,
+      teamId: "team-01",
+      delta: 25,
+      actor: "test",
+      note: "현장 보정"
+    });
+    expect(getTeamProgress(state, "team-01").score).toBe(25);
+    const log = state.auditLogs.find((item) => item.action === "manual_score_adjust")!;
+    state = undoManualScoreAdjustment({
+      state,
+      auditLogId: log.id,
+      actor: "test"
+    });
+    expect(getTeamProgress(state, "team-01").score).toBe(0);
+    expect(state.auditLogs[0].action).toBe("manual_score_undo");
+  });
+
+  it("숨은 운영진 보너스 지급, 중복 제한, 되돌리기 후 재지급을 지원한다", () => {
+    let state = createDefaultState();
+    const first = grantAdminAward({
+      state,
+      teamId: "team-01",
+      awardType: "hidden_staff",
+      title: "숨은 운영진",
+      points: 50,
+      awardedBy: "test"
+    });
+    expect(first.ok).toBe(true);
+    state = first.state;
+    expect(getTeamProgress(state, "team-01").score).toBe(50);
+
+    const duplicate = grantAdminAward({
+      state,
+      teamId: "team-01",
+      awardType: "hidden_staff",
+      title: "숨은 운영진",
+      points: 50,
+      awardedBy: "test"
+    });
+    expect(duplicate.ok).toBe(false);
+
+    state = undoAdminAward({
+      state,
+      awardId: state.adminAwards[0].id,
+      actor: "test"
+    });
+    expect(getTeamProgress(state, "team-01").score).toBe(0);
+
+    const second = grantAdminAward({
+      state,
+      teamId: "team-01",
+      awardType: "hidden_staff",
+      title: "숨은 운영진",
+      points: 50,
+      awardedBy: "test"
+    });
+    expect(second.ok).toBe(true);
   });
 });

@@ -261,10 +261,11 @@ export async function writeAppState(state: AppState) {
   const results = await Promise.all([
     supabase.from("teams").upsert(
       state.teams.map((team) => ({
-        id: team.id,
-        team_number: team.teamNumber,
-        name: team.name,
-        church_name: team.churchName,
+            id: team.id,
+            team_number: team.teamNumber,
+            name: team.name,
+            ...(team.loginCode ? { login_code: team.loginCode } : {}),
+            church_name: team.churchName,
         member_count: team.memberCount,
         manual_adjustment: team.manualAdjustment,
         final_verified: team.finalVerified,

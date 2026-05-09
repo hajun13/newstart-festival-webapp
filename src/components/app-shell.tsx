@@ -5,13 +5,15 @@ import {
   getActiveTeamId,
   getActiveTeamName,
   getTeamProgress,
+  hasAdminSession,
   loadState,
   requireTeam,
+  setAdminSession,
   syncStateFromServer
 } from "@/lib/state";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Home, KeyRound, LogIn, Trophy } from "lucide-react";
+import { Home, KeyRound, LogOut, Trophy } from "lucide-react";
 
 export function AppShell({
   children,
@@ -22,6 +24,7 @@ export function AppShell({
 }) {
   const [teamName, setTeamName] = useState<string>("");
   const [tickets, setTickets] = useState<number>(0);
+  const [adminActive, setAdminActive] = useState(false);
 
   useEffect(() => {
     function sync() {
@@ -43,13 +46,30 @@ export function AppShell({
     }
     sync();
     syncStateFromServer().catch(() => undefined);
+    if (mode === "admin") {
+      setAdminActive(hasAdminSession());
+      fetch("/api/admin/session", { cache: "no-store" })
+        .then((response) => response.json())
+        .then((result: { ok: boolean }) => {
+          setAdminActive(result.ok);
+          setAdminSession(result.ok);
+        })
+        .catch(() => undefined);
+    }
     window.addEventListener("newstart-state", sync);
     window.addEventListener("storage", sync);
     return () => {
       window.removeEventListener("newstart-state", sync);
       window.removeEventListener("storage", sync);
     };
-  }, []);
+  }, [mode]);
+
+  async function logoutAdmin() {
+    await fetch("/api/admin/logout", { method: "POST" }).catch(() => undefined);
+    setAdminSession(false);
+    setAdminActive(false);
+    window.location.assign("/admin");
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -69,11 +89,18 @@ export function AppShell({
               </span>
             ) : null}
             {mode === "admin" ? (
-            <Link href="/admin">
-              <Button variant="quiet" className="min-h-9 px-2" title="관리자">
-                <LogIn size={18} />
-              </Button>
-            </Link>
+              <>
+                <Link href="/login">
+                  <Button variant="secondary" className="min-h-9 px-3 text-xs">
+                    참가자 홈
+                  </Button>
+                </Link>
+                {adminActive ? (
+                  <Button variant="quiet" className="min-h-9 px-3 text-xs" onClick={logoutAdmin}>
+                    <LogOut size={16} /> 로그아웃
+                  </Button>
+                ) : null}
+              </>
             ) : null}
           </div>
         </div>
