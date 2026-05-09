@@ -10,12 +10,13 @@ import { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [code, setCode] = useState("TEAM-01-KEY");
+  const isRemoteMode = usesRemoteState();
+  const [code, setCode] = useState(isRemoteMode ? "" : "TEAM-01-KEY");
   const [message, setMessage] = useState("");
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (usesRemoteState()) {
+    if (isRemoteMode) {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +71,7 @@ export default function LoginPage() {
           <div className="mb-6">
             <h2 className="text-2xl font-black">팀 코드 로그인</h2>
             <p className="mt-2 text-sm text-ink/65">
-              팀장 1명이 대표로 로그인합니다. 예시 seed 코드는 `TEAM-01-KEY`입니다.
+              팀장 1명이 대표로 로그인합니다. 현장에서 배부받은 팀 코드를 입력해 주세요.
             </p>
           </div>
           <form className="space-y-4" onSubmit={submit}>
@@ -88,17 +89,19 @@ export default function LoginPage() {
               로그인 <ArrowRight size={18} />
             </Button>
           </form>
-          <Button
-            type="button"
-            variant="quiet"
-            className="mt-3 w-full"
-            onClick={() => {
-              resetState();
-              setMessage("테스트 데이터가 초기화되었습니다.");
-            }}
-          >
-            <RotateCcw size={16} /> 로컬 테스트 데이터 초기화
-          </Button>
+          {!isRemoteMode ? (
+            <Button
+              type="button"
+              variant="quiet"
+              className="mt-3 w-full"
+              onClick={() => {
+                resetState();
+                setMessage("테스트 데이터가 초기화되었습니다.");
+              }}
+            >
+              <RotateCcw size={16} /> 로컬 테스트 데이터 초기화
+            </Button>
+          ) : null}
           <div className="mt-6 rounded-md border border-ink/10 bg-citrus/20 p-3 text-xs leading-5">
             운영 모드에서는 Supabase seed에 생성된 팀 코드를 사용합니다. 이메일/문자 인증은 사용하지 않습니다.
           </div>
