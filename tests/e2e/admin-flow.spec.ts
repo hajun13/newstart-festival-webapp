@@ -16,7 +16,7 @@ test("관리자 로그인, 운영 내비, 팀 관리, 점수 되돌리기", asyn
   await expect(page.getByText(/approved|승인/).first()).toBeVisible();
 
   await page.goto("/admin/audit");
-  await expect(page.getByText("submission_approved")).toBeVisible();
+  await expect(page.getByText("submission approved")).toBeVisible();
 
   await page.goto("/admin/teams");
   await expect(page.getByRole("button", { name: /팀 CSV/ })).toBeVisible();
@@ -28,13 +28,12 @@ test("관리자 로그인, 운영 내비, 팀 관리, 점수 되돌리기", asyn
   const teamCode = `TEAM-${String(teamNumber).padStart(2, "0")}-KEY`;
   await page.getByLabel("새 교회명").fill(teamName);
   await page.getByLabel("새 팀 코드").fill("");
-  await page.getByLabel("새 팀 비고").fill("테스트교회");
   await page.getByLabel("새 팀 인원").fill("7");
   await page.getByRole("button", { name: "팀 추가" }).click();
   await expect(page.getByLabel(`${teamName} 교회명`)).toBeVisible();
 
   await page.getByLabel(`${teamName} 교회명`).fill(editedTeamName);
-  await page.getByRole("button", { name: "정보 저장" }).last().click();
+  await page.getByRole("button", { name: "저장" }).last().click();
   await expect(page.getByLabel(`${editedTeamName} 교회명`)).toBeVisible();
 
   await page.goto("/login");
@@ -50,6 +49,10 @@ test("관리자 로그인, 운영 내비, 팀 관리, 점수 되돌리기", asyn
   await expect(page.getByText("+15점")).toBeVisible();
   await page.getByRole("button", { name: /취소/ }).last().click();
   await expect(page.getByRole("button", { name: /완료/ })).toBeVisible();
+
+  await page.getByLabel("전체 점수 초기화 확인").fill("초기화");
+  await page.getByRole("button", { name: "전체 초기화" }).click();
+  await expect(page.getByText("운영 점수와 제출 기록을 초기화했습니다.")).toBeVisible();
 
   await page.getByPlaceholder("삭제 확인명").last().fill(editedTeamName);
   await page.getByRole("button", { name: /삭제/ }).last().click();

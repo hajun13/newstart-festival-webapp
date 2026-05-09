@@ -7,8 +7,10 @@ import {
   grantAdminAward,
   setSubmissionStatus,
   submitMission,
+  resetOperationProgress,
   undoAdminAward,
-  undoManualScoreAdjustment
+  undoManualScoreAdjustment,
+  verifyFinal
 } from "@/lib/state";
 
 function quizAnswers(state: ReturnType<typeof createDefaultState>, missionCode: string) {
@@ -153,5 +155,36 @@ describe("scoring", () => {
       awardedBy: "test"
     });
     expect(second.ok).toBe(true);
+  });
+
+  it("운영 점수 초기화는 팀과 코드는 유지하고 점수 근거를 비운다", () => {
+    let state = approveAllMissions();
+    state = adjustManualScore({
+      state,
+      teamId: "team-01",
+      delta: 25,
+      actor: "test",
+      note: "현장 보정"
+    });
+    state = grantAdminAward({
+      state,
+      teamId: "team-01",
+      awardType: "hidden_staff",
+      title: "숨은 운영진",
+      points: 50,
+      awardedBy: "test"
+    }).state;
+    state = verifyFinal(state, "team-01").state;
+
+    const reset = resetOperationProgress(state);
+    expect(reset.teams).toHaveLength(state.teams.length);
+    expect(reset.teams[0].loginCode).toBe(state.teams[0].loginCode);
+    expect(reset.submissions).toHaveLength(0);
+    expect(reset.easterEggClaims).toHaveLength(0);
+    expect(reset.adminAwards).toHaveLength(0);
+    expect(reset.auditLogs).toHaveLength(0);
+    expect(reset.teams[0].manualAdjustment).toBe(0);
+    expect(reset.teams[0].finalVerified).toBe(false);
+    expect(getTeamProgress(reset, "team-01").score).toBe(0);
   });
 });

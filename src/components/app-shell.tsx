@@ -54,7 +54,10 @@ export function AppShell({
           setAdminActive(result.ok);
           setAdminSession(result.ok);
         })
-        .catch(() => undefined);
+        .catch(() => {
+          setAdminActive(false);
+          setAdminSession(false);
+        });
     }
     window.addEventListener("newstart-state", sync);
     window.addEventListener("storage", sync);

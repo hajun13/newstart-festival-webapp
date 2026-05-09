@@ -28,7 +28,10 @@ export function AdminNav() {
         setAdminSession(result.ok);
         if (result.ok) syncStateFromServer().catch(() => undefined);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        setActive(false);
+        setAdminSession(false);
+      });
   }, []);
 
   if (!active) return null;

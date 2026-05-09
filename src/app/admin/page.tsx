@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAdminState } from "@/lib/admin/use-admin-state";
-import { buildTeamRows, setAdminSession, syncStateFromServer } from "@/lib/state";
+import { buildTeamRows, hasAdminSession, setAdminSession, syncStateFromServer } from "@/lib/state";
 import { formatScore } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -26,14 +26,8 @@ function missionStatusClass(status?: string) {
 export default function AdminPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
-  const [active, setActive] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("newstart-admin-session") === "true";
-  });
-  const [checkingSession, setCheckingSession] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.localStorage.getItem("newstart-admin-session") !== "true";
-  });
+  const [active, setActive] = useState(() => hasAdminSession());
+  const [checkingSession, setCheckingSession] = useState(() => !hasAdminSession());
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -47,10 +41,17 @@ export default function AdminPage() {
           setAdminSession(true);
           const next = new URLSearchParams(window.location.search).get("next");
           if (next?.startsWith("/admin/")) router.replace(next);
+        } else {
+          setActive(false);
+          setAdminSession(false);
         }
         setCheckingSession(false);
       })
-      .catch(() => setCheckingSession(false));
+      .catch(() => {
+        setActive(false);
+        setAdminSession(false);
+        setCheckingSession(false);
+      });
   }, [router]);
 
   const [state] = useAdminState();

@@ -1,6 +1,6 @@
 "use client";
 
-import { loadState, syncStateFromServer, usesRemoteState } from "@/lib/state";
+import { loadState, setAdminSession, syncStateFromServer, usesRemoteState } from "@/lib/state";
 import type { AppState } from "@/lib/types";
 import { useEffect, useState } from "react";
 
@@ -9,6 +9,19 @@ export function useAdminState() {
 
   useEffect(() => {
     let mounted = true;
+    fetch("/api/admin/session", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((result: { ok: boolean }) => {
+        setAdminSession(result.ok);
+        if (!result.ok && window.location.pathname !== "/admin") {
+          const next = `${window.location.pathname}${window.location.search}`;
+          window.location.assign(`/admin?next=${encodeURIComponent(next)}`);
+        }
+      })
+      .catch(() => {
+        setAdminSession(false);
+        if (window.location.pathname !== "/admin") window.location.assign("/admin");
+      });
     if (usesRemoteState()) {
       syncStateFromServer()
         .then((next) => {

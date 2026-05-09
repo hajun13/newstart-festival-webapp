@@ -16,7 +16,7 @@ import {
 } from "@/lib/state";
 import type { AppState, AuditLog, Team } from "@/lib/types";
 import { formatScore } from "@/lib/utils";
-import { Download, RotateCcw, Trash2 } from "lucide-react";
+import { Download, RefreshCcw, RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 type TeamDraft = {
@@ -78,6 +78,8 @@ export default function AdminTeamsPage() {
   const [drafts, setDrafts] = useState<Record<string, TeamDraft>>({});
   const [adjustments, setAdjustments] = useState<Record<string, AdjustmentDraft>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<Record<string, string>>({});
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetting, setResetting] = useState(false);
   const [message, setMessage] = useState("");
   const nextTeamNumber = useMemo(
     () => Math.max(0, ...state.teams.map((team) => team.teamNumber)) + 1,
@@ -91,9 +93,16 @@ export default function AdminTeamsPage() {
     memberCount: 0
   });
 
-  const rows = buildTeamRows(state).filter((row) =>
-    `${row.team.teamNumber} ${row.team.name} ${row.team.loginCode} ${row.team.churchName}`.includes(query)
-  );
+  const allRows = buildTeamRows(state);
+  const rows = allRows.filter((row) => `${row.team.teamNumber} ${row.team.name} ${row.team.loginCode}`.includes(query));
+  const totals = useMemo(() => {
+    return {
+      score: allRows.reduce((sum, row) => sum + row.progress.score, 0),
+      tickets: allRows.reduce((sum, row) => sum + row.progress.tickets, 0),
+      submissions: state.submissions.length,
+      final: allRows.filter((row) => row.progress.finalVerified).length
+    };
+  }, [allRows, state.submissions.length]);
   const undoneManualLogIds = new Set(
     state.auditLogs
       .filter((log) => log.action === "manual_score_undo")
@@ -264,6 +273,21 @@ export default function AdminTeamsPage() {
     );
   }
 
+  async function resetScores() {
+    setResetting(true);
+    await callAdminApi(
+      "/api/admin/reset-scores",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmPhrase: resetConfirm })
+      },
+      "초기화 실패"
+    );
+    setResetConfirm("");
+    setResetting(false);
+  }
+
   function exportTeams() {
     const csv = buildCsv(
       ["team_number", "team_name", "login_code", "score", "tickets", "cleared_themes", "completed_missions", "final_verified"],
@@ -311,10 +335,106 @@ export default function AdminTeamsPage() {
     <AppShell mode="admin">
       <AdminNav />
       <div className="space-y-4 pb-20">
+        <div className="rounded-md border-2 border-ink bg-night p-5 text-paper shadow-cut">
+          <div className="grid gap-4 xl:grid-cols-[1fr_auto] xl:items-end">
+            <div>
+              <p className="text-xs font-black tracking-[0.18em] text-citrus">팀 운영</p>
+              <h1 className="mt-2 text-3xl font-black">교회별 점수 관리</h1>
+              <p className="mt-1 text-sm text-paper/70">
+                팀 이름은 교회명으로 사용합니다. 테스트가 끝나면 전체 점수 초기화 후 실제 운영을 시작하세요.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 xl:min-w-[520px]">
+              {[
+                ["총점", formatScore(totals.score)],
+                ["추첨권", `${totals.tickets}장`],
+                ["제출", `${totals.submissions}건`],
+                ["최종", `${totals.final}팀`]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-md bg-paper/10 px-3 py-2">
+                  <div className="text-[11px] font-bold text-paper/55">{label}</div>
+                  <div className="mt-1 text-lg font-black">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 xl:grid-cols-[1fr_420px]">
+          <Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-black">팀 추가</h2>
+                <p className="mt-1 text-sm text-ink/60">교회명과 로그인 코드를 등록합니다. 코드는 비우면 자동 생성됩니다.</p>
+              </div>
+            </div>
+            <form className="mt-4 grid gap-2 lg:grid-cols-[84px_1.2fr_1fr_84px_auto]" onSubmit={addTeam}>
+              <Input
+                type="number"
+                aria-label="새 팀 번호"
+                value={newTeam.teamNumber || nextTeamNumber}
+                onChange={(event) => {
+                  const teamNumber = Number(event.target.value);
+                  setNewTeam((current) => ({ ...current, teamNumber }));
+                }}
+              />
+              <Input
+                aria-label="새 교회명"
+                placeholder="교회명"
+                value={newTeam.name}
+                onChange={(event) => setNewTeam((current) => ({ ...current, name: event.target.value }))}
+              />
+              <Input
+                aria-label="새 팀 코드"
+                placeholder={`비우면 ${defaultCode(newTeam.teamNumber || nextTeamNumber)}`}
+                value={newTeam.loginCode}
+                onChange={(event) => setNewTeam((current) => ({ ...current, loginCode: event.target.value }))}
+              />
+              <Input
+                type="number"
+                aria-label="새 팀 인원"
+                placeholder="인원"
+                value={newTeam.memberCount}
+                onChange={(event) => setNewTeam((current) => ({ ...current, memberCount: Number(event.target.value) }))}
+              />
+              <Button type="submit">팀 추가</Button>
+            </form>
+          </Card>
+
+          <Card className="border-coral/35 bg-coral/10">
+            <div className="flex items-start gap-3">
+              <div className="rounded-md bg-coral p-2 text-white">
+                <RefreshCcw size={18} />
+              </div>
+              <div>
+                <h2 className="text-xl font-black">전체 점수 초기화</h2>
+                <p className="mt-1 text-sm text-ink/65">
+                  팀과 로그인 코드는 남기고 점수, 제출, 보너스, 최종 인증, 운영 기록을 비웁니다.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+              <Input
+                aria-label="전체 점수 초기화 확인"
+                placeholder="초기화 입력"
+                value={resetConfirm}
+                onChange={(event) => setResetConfirm(event.target.value)}
+              />
+              <Button
+                variant="danger"
+                disabled={resetting || resetConfirm.trim() !== "초기화"}
+                onClick={resetScores}
+              >
+                전체 초기화
+              </Button>
+            </div>
+          </Card>
+        </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-black">팀 관리</h1>
-            <p className="mt-1 text-sm text-ink/60">팀 이름은 교회명으로 사용합니다. 노트북 화면에서 등록, 수정, 점수 조정을 빠르게 처리합니다.</p>
+            <h2 className="text-xl font-black">운영 자료 내보내기</h2>
+            <p className="mt-1 text-sm text-ink/60">행사 종료 후 점수, 제출, 추첨권 자료를 CSV로 저장합니다.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={exportTeams}><Download size={16} /> 팀 CSV</Button>
@@ -328,54 +448,8 @@ export default function AdminTeamsPage() {
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-black">팀 추가</h2>
-              <p className="mt-1 text-sm text-ink/60">교회명을 팀 이름으로 입력하고, 코드는 비우면 자동으로 만들어집니다.</p>
-            </div>
-          </div>
-          <form className="mt-4 grid gap-2 lg:grid-cols-[90px_1.2fr_1fr_1fr_90px_auto]" onSubmit={addTeam}>
-            <Input
-              type="number"
-              aria-label="새 팀 번호"
-              value={newTeam.teamNumber || nextTeamNumber}
-              onChange={(event) => {
-                const teamNumber = Number(event.target.value);
-                setNewTeam((current) => ({ ...current, teamNumber }));
-              }}
-            />
-            <Input
-              aria-label="새 교회명"
-              placeholder="교회명(팀 이름)"
-              value={newTeam.name}
-              onChange={(event) => setNewTeam((current) => ({ ...current, name: event.target.value }))}
-            />
-            <Input
-              aria-label="새 팀 코드"
-              placeholder={`비우면 ${defaultCode(newTeam.teamNumber || nextTeamNumber)}`}
-              value={newTeam.loginCode}
-              onChange={(event) => setNewTeam((current) => ({ ...current, loginCode: event.target.value }))}
-            />
-            <Input
-              aria-label="새 팀 비고"
-              placeholder="비고/담당자"
-              value={newTeam.churchName}
-              onChange={(event) => setNewTeam((current) => ({ ...current, churchName: event.target.value }))}
-            />
-            <Input
-              type="number"
-              aria-label="새 팀 인원"
-              placeholder="인원"
-              value={newTeam.memberCount}
-              onChange={(event) => setNewTeam((current) => ({ ...current, memberCount: Number(event.target.value) }))}
-            />
-            <Button type="submit">팀 추가</Button>
-          </form>
-        </Card>
-
-        <Card>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
               <h2 className="text-xl font-black">팀별 점수와 운영 조정</h2>
-              <p className="mt-1 text-sm text-ink/60">행마다 교회명, 코드, 점수, 조정 내역을 바로 확인하고 수정합니다.</p>
+              <p className="mt-1 text-sm text-ink/60">오른쪽 끝까지 밀리지 않도록 핵심 항목만 남겼습니다.</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-[360px_110px]">
               <Input placeholder="번호, 교회명, 코드 검색" value={query} onChange={(event) => setQuery(event.target.value)} />
@@ -384,13 +458,12 @@ export default function AdminTeamsPage() {
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-[1560px] w-full border-separate border-spacing-y-1 text-left text-xs">
+            <table className="min-w-[1280px] w-full border-separate border-spacing-y-1 text-left text-xs">
               <thead>
                 <tr className="text-ink/55">
                   <th className="sticky left-0 z-10 rounded-l-md bg-paper px-2 py-2">번호</th>
                   <th className="bg-paper px-2 py-2">교회명(팀 이름)</th>
                   <th className="bg-paper px-2 py-2">로그인 코드</th>
-                  <th className="bg-paper px-2 py-2">비고</th>
                   <th className="bg-paper px-2 py-2">인원</th>
                   <th className="bg-paper px-2 py-2 text-right">점수</th>
                   <th className="bg-paper px-2 py-2 text-right">추첨권</th>
@@ -437,14 +510,6 @@ export default function AdminTeamsPage() {
                       </td>
                       <td className="bg-white px-2 py-2">
                         <Input
-                          aria-label={`${team.name} 비고`}
-                          className="min-h-9 min-w-[160px] px-2 text-sm"
-                          value={draft.churchName}
-                          onChange={(event) => updateDraft(team, { churchName: event.target.value })}
-                        />
-                      </td>
-                      <td className="bg-white px-2 py-2">
-                        <Input
                           type="number"
                           aria-label={`${team.name} 인원`}
                           className="min-h-9 w-20 px-2 text-sm"
@@ -452,10 +517,10 @@ export default function AdminTeamsPage() {
                           onChange={(event) => updateDraft(team, { memberCount: Number(event.target.value) })}
                         />
                       </td>
-                      <td className="bg-white px-2 py-3 text-right text-base font-black">{formatScore(progress.score)}</td>
-                      <td className="bg-white px-2 py-3 text-right font-black">{progress.tickets}장</td>
+                      <td className="whitespace-nowrap bg-white px-2 py-3 text-right text-base font-black">{formatScore(progress.score)}</td>
+                      <td className="whitespace-nowrap bg-white px-2 py-3 text-right font-black">{progress.tickets}장</td>
                       <td className="bg-white px-2 py-2">
-                        <div className="grid min-w-[360px] grid-cols-[80px_1fr_auto] gap-1">
+                        <div className="grid min-w-[320px] grid-cols-[72px_1fr_auto] gap-1">
                           <Input
                             type="number"
                             aria-label={`${team.name} 점수 조정`}
@@ -476,7 +541,7 @@ export default function AdminTeamsPage() {
                         </div>
                       </td>
                       <td className="bg-white px-2 py-2">
-                        <div className="min-w-[240px] space-y-1">
+                        <div className="min-w-[200px] space-y-1">
                           {manualLogs.map((log) => {
                             const delta = manualDelta(log);
                             const undone = undoneManualLogIds.has(log.id);
@@ -510,26 +575,26 @@ export default function AdminTeamsPage() {
                         </div>
                       </td>
                       <td className="rounded-r-md bg-white px-2 py-2">
-                        <div className="flex min-w-[260px] flex-wrap gap-1">
+                        <div className="grid min-w-[190px] grid-cols-2 gap-1">
                           <Button variant="secondary" className="min-h-9 px-2 text-xs" onClick={() => saveTeam(team)}>
-                            정보 저장
+                            저장
                           </Button>
                           <Button
                             className="min-h-9 px-2 text-xs"
                             disabled={Boolean(hiddenAward)}
                             onClick={() => grantHiddenStaff(team)}
                           >
-                            {hiddenAward ? "보너스 완료" : "보너스 +50"}
+                            {hiddenAward ? "완료" : "+50"}
                           </Button>
                           <Input
-                            className="min-h-9 w-40 px-2 text-xs"
+                            className="col-span-2 min-h-9 px-2 text-xs"
                             placeholder="삭제 확인명"
                             value={deleteConfirm[team.id] ?? ""}
                             onChange={(event) =>
                               setDeleteConfirm((current) => ({ ...current, [team.id]: event.target.value }))
                             }
                           />
-                          <Button variant="danger" className="min-h-9 px-2 text-xs" onClick={() => deleteTeam(team)}>
+                          <Button variant="danger" className="col-span-2 min-h-9 px-2 text-xs" onClick={() => deleteTeam(team)}>
                             <Trash2 size={14} /> 삭제
                           </Button>
                         </div>

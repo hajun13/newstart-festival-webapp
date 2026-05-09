@@ -729,6 +729,23 @@ export function deleteTeam(input: {
   return next;
 }
 
+export function resetOperationProgress(state: AppState): AppState {
+  return {
+    ...state,
+    teams: state.teams.map((team) => ({
+      ...team,
+      manualAdjustment: 0,
+      finalVerified: false,
+      finalVerifiedAt: undefined
+    })),
+    submissions: [],
+    easterEggClaims: [],
+    adminAwards: [],
+    announcementSubmissions: [],
+    auditLogs: []
+  };
+}
+
 export function createAnnouncement(input: {
   state: AppState;
   title: string;
