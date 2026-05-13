@@ -1,7 +1,7 @@
 import { THEME_CODE_PIECES } from "@/lib/scoring/code-pieces";
 import { THEMES, type Mission, type Submission, type Theme } from "@/lib/types";
 
-export const FINAL_LIFE_KEY_PHRASE = "ㅅㅣㄴㅎㅏㄱ관에서 밥ㅁㅓㄱㅈㅏ";
+export const FINAL_LIFE_KEY_PHRASE = "ㅅ ㅣ ㄴ ㅎ ㅏ ㄱ ㄱ ㅘㄴ";
 
 export function getApprovedMissionIds(submissions: Submission[]): Set<string> {
   return new Set(

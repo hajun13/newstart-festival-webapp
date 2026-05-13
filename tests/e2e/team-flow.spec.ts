@@ -37,7 +37,7 @@ test("팀 로그인, 퀴즈 제출, 코드 조각, 최종 인증 성공 흐름",
   await expect(page.getByText(/30점이 반영/)).toBeVisible();
 
   await page.goto("/dashboard");
-  await expect(page.getByText("ㅅㅣ", { exact: true })).toBeVisible();
+  await expect(page.getByText("ㅅ", { exact: true })).toBeVisible();
 
   const seededState = await page.evaluate(() => {
     type StoredMission = { id: string; type: string; points: number };
@@ -75,7 +75,7 @@ test("팀 로그인, 퀴즈 제출, 코드 조각, 최종 인증 성공 흐름",
   await page.request.post("/api/state", { data: seededState });
 
   await page.goto("/dashboard");
-  await expect(page.getByText("ㅅㅣㄴㅎㅏㄱ관에서 밥ㅁㅓㄱㅈㅏ")).toBeVisible();
+  await expect(page.getByText("ㅅ ㅣ ㄴ ㅎ ㅏ ㄱ ㄱ ㅘㄴ")).toBeVisible();
   await page.goto("/final");
   await page.getByRole("button", { name: /최종 인증 처리/ }).click();
   await expect(page.getByText(/최종 인증이 완료/)).toBeVisible();

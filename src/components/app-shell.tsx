@@ -10,7 +10,6 @@ import {
   loadState,
   requireTeam,
   setAdminSession,
-  syncStateFromServer
 } from "@/lib/state";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -48,7 +47,6 @@ export function AppShell({
       }
     }
     sync();
-    syncStateFromServer().catch(() => undefined);
     if (mode === "admin") {
       setAdminActive(hasAdminSession());
       fetch("/api/admin/session", { cache: "no-store" })

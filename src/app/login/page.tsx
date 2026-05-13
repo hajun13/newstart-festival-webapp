@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { resetState, saveState, setActiveTeam, syncStateFromServer, usesRemoteState } from "@/lib/state";
-import type { AppState } from "@/lib/types";
+import { loadState, resetState, saveState, setActiveTeam, usesRemoteState } from "@/lib/state";
+import type { AppState, Team } from "@/lib/types";
 import { ArrowRight, LockKeyhole, MapPinned, RotateCcw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,7 +25,7 @@ export default function LoginPage() {
     });
     const result = (await response.json()) as {
       ok: boolean;
-      team?: { id: string; name: string };
+      team?: Team;
       message?: string;
     };
     if (!response.ok || !result.team) {
@@ -34,7 +34,13 @@ export default function LoginPage() {
     }
     setActiveTeam(result.team.id, result.team.name);
     if (usesRemoteState()) {
-      await syncStateFromServer();
+      const cached = loadState();
+      saveState({
+        ...cached,
+        teams: cached.teams.some((team) => team.id === result.team!.id)
+          ? cached.teams.map((team) => (team.id === result.team!.id ? result.team! : team))
+          : [...cached.teams, result.team]
+      });
     }
     router.push("/dashboard");
   }

@@ -20,7 +20,7 @@ describe("theme status", () => {
     });
     const progress = getTeamProgress(result.state, "team-01");
     expect(progress.clearedThemes).toEqual(["nutrition"]);
-    expect(progress.codePieces[0]).toBe("ㅅㅣ");
+    expect(progress.codePieces[0]).toBe("ㅅ");
   });
 
   it("8개 테마 클리어 시 문구가 완성된다", () => {
@@ -55,6 +55,6 @@ describe("theme status", () => {
     }
     const progress = getTeamProgress(state, "team-01");
     expect(progress.clearedThemes).toHaveLength(8);
-    expect(progress.lifeKey).toBe("ㅅㅣㄴㅎㅏㄱ관에서 밥ㅁㅓㄱㅈㅏ");
+    expect(progress.lifeKey).toBe("ㅅ ㅣ ㄴ ㅎ ㅏ ㄱ ㄱ ㅘㄴ");
   });
 });

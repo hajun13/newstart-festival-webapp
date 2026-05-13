@@ -56,7 +56,7 @@ test("완주 보너스, 올클리어 보너스, 중복 제출 방지, 추첨권 
   });
 
   await page.goto("/dashboard");
-  await expect(page.getByText("ㅅㅣㄴㅎㅏㄱ관에서 밥ㅁㅓㄱㅈㅏ")).toBeVisible();
+  await expect(page.getByText("ㅅ ㅣ ㄴ ㅎ ㅏ ㄱ ㄱ ㅘㄴ")).toBeVisible();
   await expect(page.getByText(/테마 8\/8 · 미션 16\/16/)).toBeVisible();
 
   await page.goto("/final");

@@ -11,12 +11,12 @@ export const missionsSeed: Mission[] = [
     description: "영양과 건강한 식습관에 관한 퀴즈를 풀어 생명의 식탁 첫 단서를 확인합니다.",
     points: 30,
     type: "quiz",
-    successCriteria: "20문항 중 14문항 이상 정답",
+    successCriteria: "20문항 중 10문항 이상 정답",
     locationHint: "영양 미션 안내판",
     sortOrder: 1,
     autoApprove: true,
     quiz: {
-      passScore: 14,
+      passScore: 10,
       questions: [
         {
           id: "n-mc1",
@@ -173,10 +173,10 @@ export const missionsSeed: Mission[] = [
     theme: "exercise",
     themeLabel: THEME_LABELS.exercise,
     title: "삼육대 무지개 루트",
-    description: "캠퍼스에서 무지개 7가지 색을 찾아 팀 사진을 제출합니다.",
+    description: "캠퍼스에서 무지개 7가지 색을 찾고, 색깔별 포즈를 함께 찍어 팀 사진을 제출합니다.",
     points: 50,
     type: "photo",
-    successCriteria: "현장에서 촬영한 색깔 인증 사진 제출",
+    successCriteria: "빨강 열정, 주황 점프, 노랑 햇살 미소, 초록 나무, 파랑 파도, 남색 기도, 보라 왕관 포즈 인증",
     locationHint: "캠퍼스 전체",
     sortOrder: 3,
     autoApprove: true,
@@ -205,12 +205,12 @@ export const missionsSeed: Mission[] = [
     description: "물과 건강에 관한 퀴즈를 풉니다.",
     points: 30,
     type: "quiz",
-    successCriteria: "20문항 중 14문항 이상 정답",
+    successCriteria: "20문항 중 10문항 이상 정답",
     locationHint: "물 미션 안내판",
     sortOrder: 5,
     autoApprove: true,
     quiz: {
-      passScore: 14,
+      passScore: 10,
       questions: [
         {
           id: "w-mc1",
@@ -365,10 +365,10 @@ export const missionsSeed: Mission[] = [
     theme: "sunshine",
     themeLabel: THEME_LABELS.sunshine,
     title: "빛을 찾아서",
-    description: "햇빛이 잘 드는 캠퍼스 장소 3곳에서 서로 다른 콘셉트 사진을 제출합니다.",
+    description: "햇빛이 잘 드는 캠퍼스 장소 3곳에서 가장 밝은 미소, 햇빛 영웅 포즈, 하나님이 주신 빛 표현 사진을 제출합니다.",
     points: 50,
     type: "photo",
-    successCriteria: "서로 다른 장소 3곳 사진 제출",
+    successCriteria: "서로 다른 장소 3곳에서 지정 콘셉트 3장 제출",
     locationHint: "햇빛이 드는 캠퍼스 장소",
     sortOrder: 7,
     autoApprove: true
@@ -425,12 +425,12 @@ export const missionsSeed: Mission[] = [
     description: "공기와 호흡에 관한 수수께끼형 퀴즈를 풉니다.",
     points: 30,
     type: "quiz",
-    successCriteria: "20문항 중 14문항 이상 정답",
+    successCriteria: "20문항 중 10문항 이상 정답",
     locationHint: "공기 미션 안내판",
     sortOrder: 11,
     autoApprove: true,
     quiz: {
-      passScore: 14,
+      passScore: 10,
       questions: [
         {
           id: "a-mc1",
@@ -589,7 +589,7 @@ export const missionsSeed: Mission[] = [
     theme: "rest",
     themeLabel: THEME_LABELS.rest,
     title: "짐 내려놓기",
-    description: "익명 고민/기도 제목을 작성하고 다른 팀을 위해 1분간 기도합니다.",
+    description: "익명 고민/기도 제목을 작성하고, 다른 팀의 기도 제목을 받아 팀끼리 1분간 기도합니다.",
     points: 50,
     type: "text",
     successCriteria: "기도 제목 또는 감사 제목 작성",

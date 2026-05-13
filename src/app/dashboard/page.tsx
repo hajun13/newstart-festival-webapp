@@ -25,9 +25,15 @@ export default function DashboardPage() {
         router.replace("/login");
         return;
       }
+      const cached = loadState();
+      const cachedTeam = cached.teams.find((item) => item.id === teamId);
+      if (cachedTeam) {
+        setState(cached);
+        setTeam(cachedTeam);
+      }
       const next = usesRemoteState()
-        ? await syncStateFromServer().catch(() => loadState())
-        : loadState();
+        ? await syncStateFromServer().catch(() => cached)
+        : cached;
       if (!active) return;
       const nextTeam = next.teams.find((item) => item.id === teamId);
       if (!nextTeam) {
