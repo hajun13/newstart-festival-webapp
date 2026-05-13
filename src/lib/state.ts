@@ -4,6 +4,7 @@ import {
   NEWSTART_COMPLETION_BONUS,
   calculateTeamProgress
 } from "@/lib/scoring/calculate-score";
+import { teamLoginCodeMatches } from "@/lib/auth/team-code";
 import { THEMES, type AdminAward, type Announcement, type AppState, type AuditLog, type Mission, type Submission, type SubmissionStatus, type Team, type TeamProgress } from "@/lib/types";
 import { createEasterEggSeed, createTeamsSeed, missionsSeed } from "@/lib/missions/mission-seed";
 
@@ -166,7 +167,7 @@ export function addAudit(
 export function loginTeam(state: AppState, loginCode: string): Team | null {
   return (
     state.teams.find(
-      (team) => team.loginCode.toUpperCase() === loginCode.trim().toUpperCase()
+      (team) => teamLoginCodeMatches(loginCode, team.loginCode)
     ) ?? null
   );
 }

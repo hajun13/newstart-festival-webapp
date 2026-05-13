@@ -29,7 +29,7 @@ export default function LoginPage() {
       message?: string;
     };
     if (!response.ok || !result.team) {
-      setMessage(result.message ?? "팀 코드를 확인해 주세요.");
+      setMessage(result.message ?? "팀 코드를 확인해 주세요. 하이픈은 빼고 입력해도 됩니다.");
       return;
     }
     setActiveTeam(result.team.id, result.team.name);

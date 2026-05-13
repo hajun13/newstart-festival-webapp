@@ -2,6 +2,7 @@ import { loginTeam } from "@/lib/state";
 import { getMockState } from "@/lib/server/mock-db";
 import { TEAM_SESSION_COOKIE } from "@/lib/server/app-state";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { teamLoginCodeMatches } from "@/lib/auth/team-code";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -10,27 +11,27 @@ export async function POST(request: Request) {
     const supabase = createSupabaseServiceClient();
     const { data, error } = await supabase
       .from("teams")
-      .select("id, team_number, name, church_name, member_count, final_verified, final_verified_at, manual_adjustment")
-      .eq("login_code", code?.trim().toUpperCase() ?? "")
-      .maybeSingle();
-    if (error || !data) {
+      .select("id, team_number, name, login_code, church_name, member_count, final_verified, final_verified_at, manual_adjustment")
+      .order("team_number");
+    const team = data?.find((item) => teamLoginCodeMatches(code ?? "", item.login_code ?? ""));
+    if (error || !team) {
       return NextResponse.json({ ok: false, message: "팀 코드를 확인해 주세요." }, { status: 401 });
     }
     const response = NextResponse.json({
       ok: true,
       team: {
-        id: data.id,
-        teamNumber: data.team_number,
-        name: data.name,
+        id: team.id,
+        teamNumber: team.team_number,
+        name: team.name,
         loginCode: "",
-        churchName: data.church_name ?? "",
-        memberCount: data.member_count ?? 0,
-        finalVerified: data.final_verified,
-        finalVerifiedAt: data.final_verified_at ?? undefined,
-        manualAdjustment: data.manual_adjustment ?? 0
+        churchName: team.church_name ?? "",
+        memberCount: team.member_count ?? 0,
+        finalVerified: team.final_verified,
+        finalVerifiedAt: team.final_verified_at ?? undefined,
+        manualAdjustment: team.manual_adjustment ?? 0
       }
     });
-    response.cookies.set(TEAM_SESSION_COOKIE, data.id, {
+    response.cookies.set(TEAM_SESSION_COOKIE, team.id, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

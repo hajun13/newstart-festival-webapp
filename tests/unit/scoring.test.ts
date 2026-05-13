@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_CLEAR_BONUS, NEWSTART_COMPLETION_BONUS } from "@/lib/scoring/calculate-score";
+import { normalizeTeamLoginCode, teamLoginCodeMatches } from "@/lib/auth/team-code";
 import {
   adjustManualScore,
   createDefaultState,
@@ -51,6 +52,12 @@ function approveAllMissions() {
 }
 
 describe("scoring", () => {
+  it("팀 코드는 공백, 대소문자, 하이픈 형태 차이를 흡수한다", () => {
+    expect(normalizeTeamLoginCode(" team–01 key ")).toBe("TEAM-01KEY");
+    expect(teamLoginCodeMatches("team01key", "TEAM-01-KEY")).toBe(true);
+    expect(teamLoginCodeMatches("TEAM－01－KEY", "TEAM-01-KEY")).toBe(true);
+  });
+
   it("단일 미션 승인과 중복 제출은 점수를 한 번만 반영한다", () => {
     let state = createDefaultState();
     state = submitMission({
