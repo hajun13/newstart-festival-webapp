@@ -261,6 +261,10 @@ export function submitMission(input: {
     reviewNote = "스태프 승인 대기";
   }
 
+  if (["photo", "screenshot"].includes(mission.type) && !input.filePaths?.length) {
+    throw new Error("이미지 파일을 첨부해야 제출할 수 있습니다.");
+  }
+
   const submission: Submission = {
     id: existing?.id ?? id("sub"),
     teamId: input.teamId,

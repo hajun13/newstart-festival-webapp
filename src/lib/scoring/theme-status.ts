@@ -1,6 +1,8 @@
 import { THEME_CODE_PIECES } from "@/lib/scoring/code-pieces";
 import { THEMES, type Mission, type Submission, type Theme } from "@/lib/types";
 
+export const FINAL_LIFE_KEY_PHRASE = "ㅅㅣㄴㅎㅏㄱ관에서 밥ㅁㅓㄱㅈㅏ";
+
 export function getApprovedMissionIds(submissions: Submission[]): Set<string> {
   return new Set(
     submissions
@@ -32,6 +34,6 @@ export function getCodePieces(clearedThemes: Theme[]): string[] {
 }
 
 export function getLifeKeyPhrase(clearedThemes: Theme[]): string {
-  if (clearedThemes.length === THEMES.length) return "홍명기홀로 오라!";
+  if (clearedThemes.length === THEMES.length) return FINAL_LIFE_KEY_PHRASE;
   return getCodePieces(clearedThemes).join(" ");
 }

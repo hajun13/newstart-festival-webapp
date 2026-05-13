@@ -23,11 +23,16 @@ export async function POST(request: Request) {
     if (usesSupabase && (body.filePaths ?? []).some((path) => !path.startsWith(storagePrefix))) {
       return NextResponse.json({ ok: false, message: "제출 파일 경로가 올바르지 않습니다." }, { status: 400 });
     }
-    const state = usesSupabase ? await readAppState() : getMockState();
-    const result = submitMission({ state, ...body });
-    if (usesSupabase) await writeAppState(result.state);
-    else setMockState(result.state);
-    return NextResponse.json({ ok: true, submission: result.submission, message: result.message });
+        const state = usesSupabase ? await readAppState() : getMockState();
+        const result = submitMission({ state, ...body });
+        if (usesSupabase) await writeAppState(result.state);
+        else setMockState(result.state);
+        return NextResponse.json({
+          ok: true,
+          submission: result.submission,
+          message: result.message,
+          state: result.state
+        });
   } catch (error) {
     return NextResponse.json(
       { ok: false, message: error instanceof Error ? error.message : "제출 실패" },

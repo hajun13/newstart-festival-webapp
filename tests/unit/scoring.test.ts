@@ -95,6 +95,17 @@ describe("scoring", () => {
     expect(getTeamProgress(state, "team-01").score).toBe(0);
   });
 
+  it("사진 미션은 이미지 첨부 없이 점수를 지급하지 않는다", () => {
+    const state = createDefaultState();
+    expect(() =>
+      submitMission({
+        state,
+        teamId: "team-01",
+        missionCode: "EXE-50"
+      })
+    ).toThrow("이미지 파일을 첨부해야 제출할 수 있습니다.");
+  });
+
   it("수동 점수 조정과 되돌리기를 반영한다", () => {
     let state = createDefaultState();
     state = adjustManualScore({

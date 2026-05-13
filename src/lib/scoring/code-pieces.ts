@@ -1,14 +1,14 @@
 import type { Theme } from "@/lib/types";
 
 export const THEME_CODE_PIECES: Record<Theme, string> = {
-  nutrition: "홍",
-  exercise: "명",
-  water: "기",
-  sunshine: "홀",
-  temperance: "로",
-  air: "오",
-  rest: "라",
-  trust: "!"
+  nutrition: "ㅅㅣ",
+  exercise: "ㄴ",
+  water: "ㅎㅏㄱ",
+  sunshine: "관",
+  temperance: "에",
+  air: "서",
+  rest: "밥",
+  trust: "ㅁㅓㄱㅈㅏ"
 };
 
 export const THEME_LABELS: Record<Theme, string> = {

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAdminState } from "@/lib/admin/use-admin-state";
-import { saveState, staffApproveByTeamMission } from "@/lib/state";
+import { saveState, staffApproveByTeamMission, syncStateFromServer, usesRemoteState } from "@/lib/state";
+import type { AppState } from "@/lib/types";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -29,6 +30,8 @@ export default function AdminStaffPage() {
   const [state, setState] = useAdminState();
   const [teamQuery, setTeamQuery] = useState("");
   const [missionCode, setMissionCode] = useState("WTR-80");
+  const [message, setMessage] = useState("");
+  const [workingTeamId, setWorkingTeamId] = useState<string | null>(null);
   const staffMissions = state.missions.filter((mission) => mission.type === "staff");
   const selectedMission = staffMissions.find((mission) => mission.code === missionCode) ?? staffMissions[0];
   const teams = useMemo(
@@ -50,8 +53,39 @@ export default function AdminStaffPage() {
     return { approved, rejected, waiting };
   }, [rows]);
 
-  function approve(teamId: string, success: boolean) {
+  async function approve(teamId: string, success: boolean) {
     if (!selectedMission) return;
+    setWorkingTeamId(teamId);
+    setMessage("");
+    if (usesRemoteState()) {
+      try {
+        const response = await fetch("/api/admin/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teamId,
+            missionCode: selectedMission.code,
+            success,
+            reviewedBy: "staff-admin"
+          })
+        });
+        const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
+        if (!response.ok || !result.ok) {
+          setMessage(result.message ?? "처리하지 못했습니다. 관리자 로그인을 다시 확인해 주세요.");
+          return;
+        }
+        const next = result.state ?? await syncStateFromServer();
+        saveState(next);
+        setState(next);
+        setMessage(success ? "성공 처리했습니다." : "실패 처리했습니다.");
+        return;
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "처리 중 문제가 발생했습니다.");
+        return;
+      } finally {
+        setWorkingTeamId(null);
+      }
+    }
     const next = staffApproveByTeamMission({
       state,
       teamId,
@@ -61,6 +95,8 @@ export default function AdminStaffPage() {
     });
     saveState(next);
     setState(next);
+    setMessage(success ? "성공 처리했습니다." : "실패 처리했습니다.");
+    setWorkingTeamId(null);
   }
 
   return (
@@ -109,6 +145,7 @@ export default function AdminStaffPage() {
             </select>
             <div className="rounded-md bg-paper px-3 py-2 text-sm font-bold text-ink/65">현재 {rows.length}팀</div>
           </div>
+          {message ? <p className="mt-3 text-sm font-bold text-moss">{message}</p> : null}
         </Card>
 
         <Card>
@@ -150,10 +187,10 @@ export default function AdminStaffPage() {
                     </td>
                     <td className="rounded-r-md bg-white px-3 py-3">
                       <div className="flex min-w-[180px] flex-wrap gap-1">
-                        <Button className="min-h-9 px-3 text-xs" disabled={!selectedMission} onClick={() => approve(team.id, true)}>
-                          <CheckCircle2 size={15} /> 성공
+                        <Button className="min-h-9 px-3 text-xs" disabled={!selectedMission || workingTeamId === team.id} onClick={() => approve(team.id, true)}>
+                          <CheckCircle2 size={15} /> {workingTeamId === team.id ? "처리 중" : "성공"}
                         </Button>
-                        <Button variant="danger" className="min-h-9 px-3 text-xs" disabled={!selectedMission} onClick={() => approve(team.id, false)}>
+                        <Button variant="danger" className="min-h-9 px-3 text-xs" disabled={!selectedMission || workingTeamId === team.id} onClick={() => approve(team.id, false)}>
                           <XCircle size={15} /> 실패
                         </Button>
                       </div>

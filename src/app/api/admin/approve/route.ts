@@ -18,7 +18,9 @@ export async function POST(request: Request) {
     reviewedBy?: string;
   };
   try {
-    const current = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "false" ? await readAppState() : getMockState();
+    const current = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "false"
+      ? await readAppState({ includeLoginCodes: true })
+      : getMockState();
     const state = body.submissionId
       ? setSubmissionStatus({
           state: current,
@@ -35,7 +37,7 @@ export async function POST(request: Request) {
         });
     if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "false") await writeAppState(state);
     else setMockState(state);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, state });
   } catch (error) {
     return NextResponse.json(
       { ok: false, message: error instanceof Error ? error.message : "승인 실패" },

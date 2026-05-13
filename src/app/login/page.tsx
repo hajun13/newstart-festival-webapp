@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { loginTeam, loadState, resetState, setActiveTeam, usesRemoteState } from "@/lib/state";
+import { resetState, saveState, setActiveTeam, usesRemoteState } from "@/lib/state";
+import type { AppState } from "@/lib/types";
 import { ArrowRight, LockKeyhole, MapPinned, RotateCcw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,31 +18,21 @@ export default function LoginPage() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isRemoteMode) {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
-      const result = (await response.json()) as {
-        ok: boolean;
-        team?: { id: string; name: string };
-        message?: string;
-      };
-      if (!response.ok || !result.team) {
-        setMessage(result.message ?? "팀 코드를 확인해 주세요.");
-        return;
-      }
-      setActiveTeam(result.team.id, result.team.name);
-      router.push("/dashboard");
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code })
+    });
+    const result = (await response.json()) as {
+      ok: boolean;
+      team?: { id: string; name: string };
+      message?: string;
+    };
+    if (!response.ok || !result.team) {
+      setMessage(result.message ?? "팀 코드를 확인해 주세요.");
       return;
     }
-    const team = loginTeam(loadState(), code);
-    if (!team) {
-      setMessage("팀 코드를 확인해 주세요.");
-      return;
-    }
-    setActiveTeam(team.id, team.name);
+    setActiveTeam(result.team.id, result.team.name);
     router.push("/dashboard");
   }
 
@@ -107,8 +98,11 @@ export default function LoginPage() {
               type="button"
               variant="quiet"
               className="mt-3 w-full"
-              onClick={() => {
-                resetState();
+              onClick={async () => {
+                const local = resetState();
+                const response = await fetch("/api/mock/reset", { method: "POST" }).catch(() => null);
+                const result = response ? ((await response.json()) as { ok: boolean; state?: AppState }) : null;
+                saveState(result?.state ?? local);
                 setMessage("테스트 데이터가 초기화되었습니다.");
               }}
             >

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("관리자 로그인, 운영 내비, 팀 관리, 점수 되돌리기", async ({ page }) => {
+  await page.request.post("/api/mock/reset");
   await page.goto("/admin");
   await expect(page.getByText("관리자 로그인")).toBeVisible();
   await page.getByRole("textbox").fill("NEWSTART-ADMIN-2026");

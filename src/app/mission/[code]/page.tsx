@@ -10,21 +10,25 @@ import {
   getActiveTeamId,
   loadState,
   saveState,
-  submitMission,
   syncStateFromServer,
   usesRemoteState
 } from "@/lib/state";
-import type { Mission } from "@/lib/types";
+import type { AppState, Mission } from "@/lib/types";
 import { CheckCircle2, FileImage, ShieldCheck } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-async function fileToCompressedMarker(file: File): Promise<string> {
+async function fileToLocalPreviewPath(file: File): Promise<string> {
   if (file.size > 4 * 1024 * 1024) {
     throw new Error("파일은 4MB 이하만 선택할 수 있습니다. 현장에서는 1MB 이하 압축 업로드를 권장합니다.");
   }
   if (!file.type.startsWith("image/")) return `${file.name}:${file.size}`;
-  return `${file.name}:${Math.min(file.size, 1024 * 1024)}:client-compressed`;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("이미지 미리보기를 만들 수 없습니다."));
+    reader.readAsDataURL(file);
+  });
 }
 
 async function uploadMissionFile(input: { file: File; teamId: string; missionCode: string }) {
@@ -74,40 +78,35 @@ export default function MissionPage() {
     }
     setBusy(true);
     try {
+      if (["photo", "screenshot"].includes(mission.type) && files.length === 0) {
+        setMessage("이미지를 선택한 뒤 제출해 주세요.");
+        return;
+      }
       const filePaths = usesRemoteState()
         ? await Promise.all(files.map((file) => uploadMissionFile({ file, teamId, missionCode: mission.code })))
-        : await Promise.all(files.map(fileToCompressedMarker));
-      const result = submitMission({
-        state: loadState(),
-        teamId,
-        missionCode: mission.code,
-        answerText: text,
-        answerJson: { answers },
-        filePaths
+        : await Promise.all(files.map(fileToLocalPreviewPath));
+      const response = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          missionCode: mission.code,
+          answerText: text,
+          answerJson: { answers },
+          filePaths
+        })
       });
-      if (usesRemoteState()) {
-        const response = await fetch("/api/submissions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            teamId,
-            missionCode: mission.code,
-            answerText: text,
-            answerJson: { answers },
-            filePaths
-          })
-        });
-        const remoteResult = (await response.json()) as { ok: boolean; message?: string };
-        if (!response.ok || !remoteResult.ok) {
-          setMessage(remoteResult.message ?? "제출 중 문제가 발생했습니다.");
-          return;
-        }
-        await syncStateFromServer();
-        setMessage(remoteResult.message ?? "제출이 반영되었습니다.");
-      } else {
-        saveState(result.state);
-        setMessage(result.message);
+      const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
+      if (!response.ok || !result.ok) {
+        setMessage(result.message ?? "제출 중 문제가 발생했습니다.");
+        return;
       }
+      if (result.state) {
+        saveState(result.state);
+      } else if (usesRemoteState()) {
+        await syncStateFromServer();
+      }
+      setMessage(result.message ?? "제출이 반영되었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "제출 중 문제가 발생했습니다.");
     } finally {

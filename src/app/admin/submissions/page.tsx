@@ -7,13 +7,17 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAdminState } from "@/lib/admin/use-admin-state";
 import { saveState, setSubmissionStatus, syncStateFromServer, usesRemoteState } from "@/lib/state";
-import type { SubmissionStatus } from "@/lib/types";
+import type { AppState, SubmissionStatus } from "@/lib/types";
 import { formatScore } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 
 function isStorageImagePath(path: string) {
   return path.startsWith("mission-submissions/");
+}
+
+function isInlineImagePath(path: string) {
+  return path.startsWith("data:image/");
 }
 
 const statusLabels: Record<SubmissionStatus, string> = {
@@ -37,21 +41,39 @@ export default function AdminSubmissionsPage() {
   const [state, setState] = useAdminState();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SubmissionStatus | "all">("all");
+  const [message, setMessage] = useState("");
+  const [workingId, setWorkingId] = useState<string | null>(null);
 
   async function mutate(submissionId: string, nextStatus: Extract<SubmissionStatus, "approved" | "rejected" | "cancelled">) {
+    setWorkingId(submissionId);
+    setMessage("");
     if (usesRemoteState()) {
-      const response = await fetch("/api/admin/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          submissionId,
-          status: nextStatus,
-          reviewedBy: "admin"
-        })
-      });
-      if (!response.ok) return;
-      setState(await syncStateFromServer());
-      return;
+      try {
+        const response = await fetch("/api/admin/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            submissionId,
+            status: nextStatus,
+            reviewedBy: "admin"
+          })
+        });
+        const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
+        if (!response.ok || !result.ok) {
+          setMessage(result.message ?? "처리하지 못했습니다. 관리자 로그인을 다시 확인해 주세요.");
+          return;
+        }
+        const next = result.state ?? await syncStateFromServer();
+        saveState(next);
+        setState(next);
+        setMessage(`${statusLabels[nextStatus]} 처리했습니다.`);
+        return;
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "처리 중 문제가 발생했습니다.");
+        return;
+      } finally {
+        setWorkingId(null);
+      }
     }
     const next = setSubmissionStatus({
         state,
@@ -62,6 +84,8 @@ export default function AdminSubmissionsPage() {
       });
     saveState(next);
     setState(next);
+    setMessage(`${statusLabels[nextStatus]} 처리했습니다.`);
+    setWorkingId(null);
   }
 
   const rows = useMemo(() => {
@@ -133,13 +157,14 @@ export default function AdminSubmissionsPage() {
               현재 {rows.length}건
             </div>
           </div>
+          {message ? <p className="mt-3 text-sm font-bold text-moss">{message}</p> : null}
         </Card>
 
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">제출 목록</h2>
-              <p className="mt-1 text-sm text-ink/60">상태 배지와 파일 미리보기를 확인하고 행 오른쪽에서 바로 처리합니다.</p>
+              <p className="mt-1 text-sm text-ink/60">사진은 첨부 칸의 썸네일을 누르면 원본으로 확인합니다. 확인 후 행 오른쪽에서 승인, 반려, 취소를 처리합니다.</p>
             </div>
           </div>
           <div className="mt-4 overflow-x-auto">
@@ -184,17 +209,17 @@ export default function AdminSubmissionsPage() {
                       {submission.filePaths.length ? (
                         <div className="grid min-w-[220px] grid-cols-2 gap-2">
                           {submission.filePaths.slice(0, 4).map((path, index) =>
-                            isStorageImagePath(path) ? (
+                            isStorageImagePath(path) || isInlineImagePath(path) ? (
                               <a
                                 key={`${submission.id}-${path}`}
-                                href={`/api/admin/files?path=${encodeURIComponent(path)}`}
+                                href={isInlineImagePath(path) ? path : `/api/admin/files?path=${encodeURIComponent(path)}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="group block rounded-md border border-ink/15 bg-paper p-1 text-xs font-bold hover:border-moss"
                               >
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={`/api/admin/files?path=${encodeURIComponent(path)}`}
+                                  src={isInlineImagePath(path) ? path : `/api/admin/files?path=${encodeURIComponent(path)}`}
                                   alt={`${team?.name ?? "팀"} 제출 이미지 ${index + 1}`}
                                   className="aspect-video w-full rounded object-cover"
                                 />
@@ -224,13 +249,13 @@ export default function AdminSubmissionsPage() {
                     </td>
                     <td className="rounded-r-md bg-white px-3 py-3">
                       <div className="flex min-w-[240px] flex-wrap gap-1">
-                        <Button type="button" className="min-h-9 px-3 text-xs" onClick={() => mutate(submission.id, "approved")}>
-                          승인
+                        <Button type="button" className="min-h-9 px-3 text-xs" disabled={workingId === submission.id} onClick={() => mutate(submission.id, "approved")}>
+                          {workingId === submission.id ? "처리 중" : "승인"}
                         </Button>
-                        <Button type="button" variant="danger" className="min-h-9 px-3 text-xs" onClick={() => mutate(submission.id, "rejected")}>
+                        <Button type="button" variant="danger" className="min-h-9 px-3 text-xs" disabled={workingId === submission.id} onClick={() => mutate(submission.id, "rejected")}>
                           반려
                         </Button>
-                        <Button type="button" variant="secondary" className="min-h-9 px-3 text-xs" onClick={() => mutate(submission.id, "cancelled")}>
+                        <Button type="button" variant="secondary" className="min-h-9 px-3 text-xs" disabled={workingId === submission.id} onClick={() => mutate(submission.id, "cancelled")}>
                           취소
                         </Button>
                       </div>
