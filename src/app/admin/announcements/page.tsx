@@ -17,8 +17,8 @@ function typeLabel(type: "notice" | "challenge") {
 export default function AdminAnnouncementsPage() {
   const [state, setState] = useAdminState();
   const [title, setTitle] = useState("NEWSTART 돌발 미션");
-  const [body, setBody] = useState("운영본부 안내에 따라 지정 장소에서 팀 사진을 제출하세요.");
-  const [type, setType] = useState<"notice" | "challenge">("notice");
+  const [body, setBody] = useState("지금부터 10분 안에 팀원들이 하트 포즈로 사진을 찍어 카카오톡 운영 채널로 제출하세요. 운영진 확인 후 팀 관리에서 돌발 미션 점수를 지급합니다.");
+  const [type, setType] = useState<"notice" | "challenge">("challenge");
   const [points, setPoints] = useState(30);
   const stats = useMemo(() => {
     const active = state.announcements.filter((item) => item.isActive).length;
@@ -56,7 +56,7 @@ export default function AdminAnnouncementsPage() {
           <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h1 className="text-3xl font-black">공지/돌발 미션</h1>
-              <p className="mt-1 text-sm text-paper/70">현장 안내와 점수형 돌발 미션을 생성하고 노출 상태를 관리합니다.</p>
+              <p className="mt-1 text-sm text-paper/70">현장 안내와 시간 제한 돌발 미션을 생성하고 노출 상태를 관리합니다.</p>
             </div>
             <div className="rounded-md border border-paper/20 px-3 py-2 text-sm font-black">
               활성 {stats.active}건 / 전체 {state.announcements.length}건
@@ -101,6 +101,9 @@ export default function AdminAnnouncementsPage() {
               </select>
               {type === "challenge" ? (
                 <>
+                  <p className="rounded-md bg-citrus/25 p-3 text-sm font-semibold leading-6">
+                    돌발 미션은 공지로 시간을 열고, 제출 확인 후 팀 관리에서 `돌발 미션 +30`을 누르면 됩니다.
+                  </p>
                   <label className="block text-xs font-black text-ink/55" htmlFor="announcement-points">점수</label>
                   <Input id="announcement-points" type="number" value={points} onChange={(event) => setPoints(Number(event.target.value))} />
                 </>

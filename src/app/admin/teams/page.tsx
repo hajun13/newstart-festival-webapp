@@ -244,15 +244,32 @@ export default function AdminTeamsPage() {
     );
   }
 
-  async function grantHiddenStaff(team: Team) {
+  async function grantHiddenStaff(team: Team, points: number, outcome: string) {
     const result = grantAdminAward({
       state,
       teamId: team.id,
       awardType: "hidden_staff",
-      title: "숨은 운영진: 생명의 열쇠지기",
-      points: 50,
+      title: `숨은 운영진: ${outcome}`,
+      points,
       awardedBy: "admin",
-      note: "암호 문장 확인 및 현장 과제 성공"
+      note: "암호 문장 확인 후 키퍼 미션 처리"
+    });
+    if (!result.ok) {
+      setMessage(result.message);
+      return;
+    }
+    await persistState(result.state, result.message);
+  }
+
+  async function grantSuddenMission(team: Team) {
+    const result = grantAdminAward({
+      state,
+      teamId: team.id,
+      awardType: "manual_bonus",
+      title: "NEWSTART 돌발 미션",
+      points: 30,
+      awardedBy: "admin",
+      note: "공지 시간 내 제출 확인"
     });
     if (!result.ok) {
       setMessage(result.message);
@@ -561,7 +578,7 @@ export default function AdminTeamsPage() {
                           })}
                           {awards.map((award) => (
                             <div key={award.id} className="flex items-center justify-between gap-2 rounded-md bg-citrus/25 px-2 py-1">
-                              <span className="truncate font-bold">보너스 +{award.points}</span>
+                              <span className="truncate font-bold">{award.title} +{award.points}</span>
                               <Button
                                 variant="quiet"
                                 className="min-h-7 px-1 text-[11px]"
@@ -582,9 +599,24 @@ export default function AdminTeamsPage() {
                           <Button
                             className="min-h-9 px-2 text-xs"
                             disabled={Boolean(hiddenAward)}
-                            onClick={() => grantHiddenStaff(team)}
+                            onClick={() => grantHiddenStaff(team, 50, "승리")}
                           >
-                            {hiddenAward ? "완료" : "+50"}
+                            키퍼 승리 +50
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            className="col-span-2 min-h-9 px-2 text-xs"
+                            disabled={Boolean(hiddenAward)}
+                            onClick={() => grantHiddenStaff(team, 10, "참여")}
+                          >
+                            {hiddenAward ? "키퍼 완료" : "키퍼 참여 +10"}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            className="col-span-2 min-h-9 px-2 text-xs"
+                            onClick={() => grantSuddenMission(team)}
+                          >
+                            돌발 미션 +30
                           </Button>
                           <Input
                             className="col-span-2 min-h-9 px-2 text-xs"

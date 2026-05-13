@@ -51,6 +51,7 @@ export default function MissionPage() {
   const params = useParams<{ code: string }>();
   const router = useRouter();
   const [mission, setMission] = useState<Mission | null>(null);
+  const [receivedPrayer, setReceivedPrayer] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -62,9 +63,21 @@ export default function MissionPage() {
     const target = findMissionByCode(state, params.code);
     if (!target) router.replace("/code");
     setMission(target);
+    if (target?.code === "RST-55") {
+      const teamId = getActiveTeamId();
+      const candidates = state.submissions
+        .filter((submission) => submission.missionId === target.id && submission.teamId !== teamId && submission.answerText?.trim())
+        .map((submission) => submission.answerText!.trim());
+      setReceivedPrayer(candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : "");
+    }
   }, [params.code, router]);
 
   const helper = useMemo(() => mission?.helperItems ?? [], [mission]);
+  const textPlaceholder = mission?.code === "TMP-50"
+    ? "예: 팀 전원 3분 절제 영상을 카카오톡으로 이한빛 전도사에게 보냈습니다."
+    : mission?.code === "RST-55"
+      ? "개인 이름 없이 우리 팀의 고민/기도 제목을 적어 주세요."
+      : "답안 또는 인증 문구를 입력하세요.";
 
   if (!mission) return null;
 
@@ -182,7 +195,7 @@ export default function MissionPage() {
                   <Textarea
                     value={text}
                     onChange={(event) => setText(event.target.value)}
-                    placeholder="답안 또는 인증 문구를 입력하세요."
+                    placeholder={textPlaceholder}
                   />
                   {helper.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -201,9 +214,22 @@ export default function MissionPage() {
                     </div>
                   ) : null}
                   {mission.type === "video_or_text" ? (
-                    <p className="mt-2 text-xs text-ink/60">
-                      영상 업로드는 앱에서 기본 지원하지 않습니다. 운영본부 백업 채널에 제출한 뒤 확인 문구를 남기세요.
-                    </p>
+                    <div className="mt-3 rounded-md bg-paper p-3 text-sm leading-6 text-ink/70">
+                      <p className="font-bold text-ink">영상 제출 안내</p>
+                      <p>절제의 3분 영상은 카카오톡으로 이한빛 전도사에게 보내고, 앱에는 전송 완료 문구를 남기세요.</p>
+                    </div>
+                  ) : null}
+                  {mission.code === "RST-55" ? (
+                    <div className="mt-3 rounded-md bg-paper p-3 text-sm leading-6 text-ink/70">
+                      <p className="font-bold text-ink">개인정보 주의</p>
+                      <p>개인 이름, 연락처, 민감한 신상 정보는 적지 마세요.</p>
+                      <div className="mt-3 rounded-md bg-white p-3">
+                        <p className="text-xs font-black text-clay">함께 기도할 제목</p>
+                        <p className="mt-1 font-semibold">
+                          {receivedPrayer || "아직 다른 팀의 기도 제목이 없습니다. 먼저 작성하고 1분간 함께 기도해 주세요."}
+                        </p>
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -216,7 +242,7 @@ export default function MissionPage() {
                   <Input
                     type="file"
                     accept="image/*"
-                    multiple={mission.type === "photo"}
+                    multiple={mission.type === "photo" || mission.code === "EXE-80"}
                     onChange={async (event) => {
                       const selected = Array.from(event.currentTarget.files ?? []);
                       const oversized = selected.find((file) => file.size > 4 * 1024 * 1024);
@@ -233,6 +259,18 @@ export default function MissionPage() {
                     4MB 초과 파일은 차단합니다. 제출 후 관리자가 원본 이미지를 확인할 수 있습니다.
                   </p>
                   {files.length ? <p className="mt-2 text-sm font-bold">{files.length}개 선택됨</p> : null}
+                  {helper.length ? (
+                    <div className="mt-4 rounded-md bg-paper p-3">
+                      <div className="text-xs font-black text-clay">제출 전 체크</div>
+                      <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+                        {helper.map((item) => (
+                          <li key={item} className="rounded-md bg-white px-3 py-2 font-semibold">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 

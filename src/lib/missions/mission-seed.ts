@@ -173,14 +173,22 @@ export const missionsSeed: Mission[] = [
     theme: "exercise",
     themeLabel: THEME_LABELS.exercise,
     title: "삼육대 무지개 루트",
-    description: "캠퍼스에서 무지개 7가지 색을 찾고, 색깔별 포즈를 함께 찍어 팀 사진을 제출합니다.",
+    description: "캠퍼스 전체에서 무지개 7가지 색을 찾고, 색깔별 포즈를 함께 찍어 팀 사진을 제출합니다. 특정 장소 코드 없이 앱에서 바로 시작합니다.",
     points: 50,
     type: "photo",
     successCriteria: "빨강 열정, 주황 점프, 노랑 햇살 미소, 초록 나무, 파랑 파도, 남색 기도, 보라 왕관 포즈 인증",
-    locationHint: "캠퍼스 전체",
+    locationHint: "캠퍼스 전체 자유 진행",
     sortOrder: 3,
     autoApprove: true,
-    helperItems: ["빨강", "주황", "노랑", "초록", "파랑", "남색", "보라"]
+    helperItems: [
+      "빨강 - 열정 포즈",
+      "주황 - 점프 포즈",
+      "노랑 - 햇살 미소",
+      "초록 - 나무 포즈",
+      "파랑 - 파도 포즈",
+      "남색 - 기도 포즈",
+      "보라 - 왕관 포즈"
+    ]
   },
   {
     id: "mission-exe-80",
@@ -188,13 +196,14 @@ export const missionsSeed: Mission[] = [
     theme: "exercise",
     themeLabel: THEME_LABELS.exercise,
     title: "네버스탑 1000보",
-    description: "시작과 종료 걸음 수 스크린샷을 제출합니다. 차이가 1,000보 이상이어야 합니다.",
+    description: "팀원 1명의 만보기 앱으로 시작과 종료 걸음 수 스크린샷을 제출합니다. 차이가 1,000보 이상이어야 합니다.",
     points: 80,
     type: "screenshot",
     successCriteria: "걸음 수 차이 1,000보 이상",
-    locationHint: "운동 루트",
+    locationHint: "캠퍼스 전체 자유 진행",
     sortOrder: 4,
-    autoApprove: false
+    autoApprove: false,
+    helperItems: ["시작 걸음 수 스크린샷", "종료 걸음 수 스크린샷", "걸음 수 차이 1,000보 이상"]
   },
   {
     id: "mission-wtr-30",
@@ -365,13 +374,14 @@ export const missionsSeed: Mission[] = [
     theme: "sunshine",
     themeLabel: THEME_LABELS.sunshine,
     title: "빛을 찾아서",
-    description: "햇빛이 잘 드는 캠퍼스 장소 3곳에서 가장 밝은 미소, 햇빛 영웅 포즈, 하나님이 주신 빛 표현 사진을 제출합니다.",
+    description: "햇빛이 잘 드는 캠퍼스 장소 3곳을 팀이 직접 찾아 가장 밝은 미소, 햇빛 영웅 포즈, 하나님이 주신 빛 표현 사진을 제출합니다. 특정 추천 장소 없이 앱에서 바로 시작합니다.",
     points: 50,
     type: "photo",
     successCriteria: "서로 다른 장소 3곳에서 지정 콘셉트 3장 제출",
-    locationHint: "햇빛이 드는 캠퍼스 장소",
+    locationHint: "캠퍼스 전체 자유 진행",
     sortOrder: 7,
-    autoApprove: true
+    autoApprove: true,
+    helperItems: ["가장 밝은 미소", "햇빛을 받는 영웅 포즈", "하나님이 주신 빛을 표현하는 포즈"]
   },
   {
     id: "mission-sun-80",
@@ -394,13 +404,14 @@ export const missionsSeed: Mission[] = [
     theme: "temperance",
     themeLabel: THEME_LABELS.temperance,
     title: "절제의 3분",
-    description: "팀원 전원이 3분 동안 조용히 절제 챌린지를 수행한 뒤 인증 문구를 제출합니다. 영상은 외부 백업 제출로 안내합니다.",
+    description: "팀원 전원이 3분 동안 한자리에 앉아 움직이지 않고 조용히 있는 모습을 촬영합니다. 영상은 카카오톡으로 이한빛 전도사에게 보내고, 앱에는 전송 완료 문구를 남깁니다.",
     points: 50,
     type: "video_or_text",
     successCriteria: "절제 챌린지 수행 확인 문구 제출",
-    locationHint: "절제 챌린지 존",
+    locationHint: "조용하고 안전한 장소에서 분산 진행",
     sortOrder: 9,
-    autoApprove: true
+    autoApprove: true,
+    helperItems: ["카카오톡 전송 완료", "이한빛 전도사에게 영상 전송", "팀 전원 3분 절제 완료"]
   },
   {
     id: "mission-tmp-80",
@@ -589,11 +600,11 @@ export const missionsSeed: Mission[] = [
     theme: "rest",
     themeLabel: THEME_LABELS.rest,
     title: "짐 내려놓기",
-    description: "익명 고민/기도 제목을 작성하고, 다른 팀의 기도 제목을 받아 팀끼리 1분간 기도합니다.",
+    description: "개인 이름 없이 익명 고민/기도 제목을 작성하고, 앱에 표시되는 다른 팀의 기도 제목을 받아 팀끼리 1분간 기도합니다.",
     points: 50,
     type: "text",
-    successCriteria: "기도 제목 또는 감사 제목 작성",
-    locationHint: "휴식 미션 존",
+    successCriteria: "개인정보 없이 기도 제목 작성 후 다른 팀 기도 제목을 위해 1분 기도",
+    locationHint: "조용하고 안전한 장소에서 자유 진행",
     sortOrder: 14,
     autoApprove: true
   },
