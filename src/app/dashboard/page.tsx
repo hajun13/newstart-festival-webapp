@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { THEME_LABELS } from "@/lib/scoring/code-pieces";
 import { formatScore } from "@/lib/utils";
-import { clearActiveTeam, getActiveTeamId, getTeamProgress, loadState, requireTeam } from "@/lib/state";
+import { clearActiveTeam, getActiveTeamId, getTeamProgress, loadState, syncStateFromServer, usesRemoteState } from "@/lib/state";
 import type { AppState, Team } from "@/lib/types";
 import { Compass, KeyRound, LogOut, Map, Ticket, Trophy } from "lucide-react";
 import Link from "next/link";
@@ -18,17 +18,55 @@ export default function DashboardPage() {
   const [team, setTeam] = useState<Team | null>(null);
 
   useEffect(() => {
-    const teamId = getActiveTeamId();
-    if (!teamId) {
-      router.replace("/login");
-      return;
+    let active = true;
+    async function hydrate() {
+      const teamId = getActiveTeamId();
+      if (!teamId) {
+        router.replace("/login");
+        return;
+      }
+      const next = usesRemoteState()
+        ? await syncStateFromServer().catch(() => loadState())
+        : loadState();
+      if (!active) return;
+      const nextTeam = next.teams.find((item) => item.id === teamId);
+      if (!nextTeam) {
+        clearActiveTeam();
+        setState(null);
+        setTeam(null);
+        router.replace("/login");
+        return;
+      }
+      setState(next);
+      setTeam(nextTeam);
     }
-    const next = loadState();
-    setState(next);
-    setTeam(requireTeam(next, teamId));
-    const sync = () => setState(loadState());
+    void hydrate();
+    const sync = () => {
+      const teamId = getActiveTeamId();
+      if (!teamId) {
+        clearActiveTeam();
+        setState(null);
+        setTeam(null);
+        router.replace("/login");
+        return;
+      }
+      const next = loadState();
+      const nextTeam = next.teams.find((item) => item.id === teamId);
+      if (!nextTeam) {
+        clearActiveTeam();
+        setState(null);
+        setTeam(null);
+        router.replace("/login");
+        return;
+      }
+      setState(next);
+      setTeam(nextTeam);
+    };
     window.addEventListener("newstart-state", sync);
-    return () => window.removeEventListener("newstart-state", sync);
+    return () => {
+      active = false;
+      window.removeEventListener("newstart-state", sync);
+    };
   }, [router]);
 
   if (!state || !team) return null;

@@ -89,6 +89,10 @@ export async function syncStateFromServer() {
   if (!response.ok) return loadState();
   const remote = (await response.json()) as AppState;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+  const activeTeamId = getActiveTeamId();
+  if (activeTeamId && !remote.teams.some((team) => team.id === activeTeamId)) {
+    clearActiveTeam();
+  }
   window.dispatchEvent(new CustomEvent("newstart-state"));
   return remote;
 }

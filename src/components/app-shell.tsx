@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  clearActiveTeam,
   getActiveTeamId,
   getActiveTeamName,
   getTeamProgress,
@@ -41,7 +42,9 @@ export function AppShell({
         setTeamName(requireTeam(state, teamId).name);
         setTickets(getTeamProgress(state, teamId).tickets);
       } catch {
+        clearActiveTeam();
         setTeamName("");
+        setTickets(0);
       }
     }
     sync();

@@ -81,3 +81,24 @@ test("팀 로그인, 퀴즈 제출, 코드 조각, 최종 인증 성공 흐름",
   await expect(page.getByText(/최종 인증이 완료/)).toBeVisible();
   await expect(page.getByText(/현재 추첨권 6장|추첨권 6장/)).toBeVisible();
 });
+
+test("예전 팀 세션이 남아 있어도 참가자 화면이 죽지 않고 로그인으로 돌아간다", async ({ page }) => {
+  await page.request.post("/api/mock/reset");
+  await page.goto("/login");
+  await page.evaluate(() => {
+    localStorage.setItem("newstart-active-team-id", "old-production-team-id");
+  });
+
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("팀 코드 입장")).toBeVisible();
+
+  await page.goto("/login");
+  await page.evaluate(() => {
+    localStorage.setItem("newstart-active-team-id", "old-production-team-id");
+  });
+
+  await page.goto("/final");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("팀 코드 입장")).toBeVisible();
+});

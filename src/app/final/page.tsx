@@ -9,10 +9,12 @@ import {
   getTeamProgress,
   loadState,
   saveState,
+  clearActiveTeam,
   syncStateFromServer,
   usesRemoteState,
   verifyFinal
 } from "@/lib/state";
+import type { AppState } from "@/lib/types";
 import { Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,14 +22,37 @@ import { useEffect, useState } from "react";
 export default function FinalPage() {
   const router = useRouter();
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [state, setState] = useState<AppState | null>(null);
   const [message, setMessage] = useState("");
-  const state = loadState();
-  const progress = teamId ? getTeamProgress(state, teamId) : null;
+  const progress =
+    state && teamId && state.teams.some((team) => team.id === teamId)
+      ? getTeamProgress(state, teamId)
+      : null;
 
   useEffect(() => {
-    const active = getActiveTeamId();
-    if (!active) router.replace("/login");
-    setTeamId(active);
+    let mounted = true;
+    async function hydrate() {
+      const active = getActiveTeamId();
+      if (!active) {
+        router.replace("/login");
+        return;
+      }
+      const next = usesRemoteState()
+        ? await syncStateFromServer().catch(() => loadState())
+        : loadState();
+      if (!mounted) return;
+      if (!next.teams.some((team) => team.id === active)) {
+        clearActiveTeam();
+        router.replace("/login");
+        return;
+      }
+      setTeamId(active);
+      setState(next);
+    }
+    void hydrate();
+    return () => {
+      mounted = false;
+    };
   }, [router]);
 
   async function submit() {
@@ -39,12 +64,13 @@ export default function FinalPage() {
         body: JSON.stringify({ teamId })
       });
       const result = (await response.json()) as { ok: boolean; message?: string };
-      await syncStateFromServer();
+      setState(await syncStateFromServer());
       setMessage(result.message ?? (response.ok ? "최종 인증이 반영되었습니다." : "아직 열리지 않았습니다."));
       return;
     }
     const result = verifyFinal(loadState(), teamId);
     saveState(result.state);
+    setState(result.state);
     setMessage(result.message);
   }
 

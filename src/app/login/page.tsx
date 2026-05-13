@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { resetState, saveState, setActiveTeam, usesRemoteState } from "@/lib/state";
+import { resetState, saveState, setActiveTeam, syncStateFromServer, usesRemoteState } from "@/lib/state";
 import type { AppState } from "@/lib/types";
 import { ArrowRight, LockKeyhole, MapPinned, RotateCcw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -33,6 +33,9 @@ export default function LoginPage() {
       return;
     }
     setActiveTeam(result.team.id, result.team.name);
+    if (usesRemoteState()) {
+      await syncStateFromServer();
+    }
     router.push("/dashboard");
   }
 
