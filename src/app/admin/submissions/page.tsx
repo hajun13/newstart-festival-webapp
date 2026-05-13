@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAdminState } from "@/lib/admin/use-admin-state";
-import { saveState, setSubmissionStatus, syncStateFromServer, usesRemoteState } from "@/lib/state";
+import { saveState, syncStateFromServer } from "@/lib/state";
 import type { AppState, SubmissionStatus } from "@/lib/types";
 import { formatScore } from "@/lib/utils";
 import { ExternalLink } from "lucide-react";
@@ -47,45 +47,30 @@ export default function AdminSubmissionsPage() {
   async function mutate(submissionId: string, nextStatus: Extract<SubmissionStatus, "approved" | "rejected" | "cancelled">) {
     setWorkingId(submissionId);
     setMessage("");
-    if (usesRemoteState()) {
-      try {
-        const response = await fetch("/api/admin/approve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            submissionId,
-            status: nextStatus,
-            reviewedBy: "admin"
-          })
-        });
-        const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
-        if (!response.ok || !result.ok) {
-          setMessage(result.message ?? "처리하지 못했습니다. 관리자 로그인을 다시 확인해 주세요.");
-          return;
-        }
-        const next = result.state ?? await syncStateFromServer();
-        saveState(next);
-        setState(next);
-        setMessage(`${statusLabels[nextStatus]} 처리했습니다.`);
-        return;
-      } catch (error) {
-        setMessage(error instanceof Error ? error.message : "처리 중 문제가 발생했습니다.");
-        return;
-      } finally {
-        setWorkingId(null);
-      }
-    }
-    const next = setSubmissionStatus({
-        state,
-        submissionId,
-        status: nextStatus,
-        reviewedBy: "admin",
-        reviewNote: nextStatus === "approved" ? "관리자 승인" : nextStatus === "rejected" ? "관리자 반려" : "승인 취소"
+    try {
+      const response = await fetch("/api/admin/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId,
+          status: nextStatus,
+          reviewedBy: "admin"
+        })
       });
-    saveState(next);
-    setState(next);
-    setMessage(`${statusLabels[nextStatus]} 처리했습니다.`);
-    setWorkingId(null);
+      const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
+      if (!response.ok || !result.ok) {
+        setMessage(result.message ?? "처리하지 못했습니다. 관리자 로그인을 다시 확인해 주세요.");
+        return;
+      }
+      const next = result.state ?? await syncStateFromServer();
+      saveState(next);
+      setState(next);
+      setMessage(`${statusLabels[nextStatus]} 처리했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "처리 중 문제가 발생했습니다.");
+    } finally {
+      setWorkingId(null);
+    }
   }
 
   const rows = useMemo(() => {

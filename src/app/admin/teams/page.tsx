@@ -11,8 +11,7 @@ import {
   buildTeamRows,
   grantAdminAward,
   saveState,
-  syncStateFromServer,
-  usesRemoteState
+  syncStateFromServer
 } from "@/lib/state";
 import type { AppState, AuditLog, Team } from "@/lib/types";
 import { formatScore } from "@/lib/utils";
@@ -131,16 +130,14 @@ export default function AdminTeamsPage() {
   }
 
   async function persistState(next: AppState, successMessage: string) {
-    if (usesRemoteState()) {
-      const response = await fetch("/api/state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next)
-      });
-      if (!response.ok) {
-        setMessage("저장에 실패했습니다.");
-        return;
-      }
+    const response = await fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next)
+    });
+    if (!response.ok) {
+      setMessage("저장에 실패했습니다.");
+      return;
     }
     saveState(next);
     setState(next);
@@ -292,17 +289,20 @@ export default function AdminTeamsPage() {
 
   async function resetScores() {
     setResetting(true);
-    await callAdminApi(
-      "/api/admin/reset-scores",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmPhrase: resetConfirm })
-      },
-      "초기화 실패"
-    );
-    setResetConfirm("");
-    setResetting(false);
+    try {
+      await callAdminApi(
+        "/api/admin/reset-scores",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirmPhrase: resetConfirm })
+        },
+        "초기화 실패"
+      );
+      setResetConfirm("");
+    } finally {
+      setResetting(false);
+    }
   }
 
   function exportTeams() {

@@ -84,7 +84,7 @@ export function loadState(): AppState {
 }
 
 export async function syncStateFromServer() {
-  if (!isBrowser() || !usesRemoteState()) return loadState();
+  if (!isBrowser()) return loadState();
   const response = await fetch("/api/state", { cache: "no-store" });
   if (!response.ok) return loadState();
   const remote = (await response.json()) as AppState;
@@ -97,11 +97,11 @@ export async function syncStateFromServer() {
   return remote;
 }
 
-export function saveState(state: AppState) {
+export function saveState(state: AppState, options: { syncRemote?: boolean } = {}) {
   if (isBrowser()) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     window.dispatchEvent(new CustomEvent("newstart-state"));
-    if (usesRemoteState() && hasAdminSession()) {
+    if (options.syncRemote && usesRemoteState() && hasAdminSession()) {
       fetch("/api/state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAdminState } from "@/lib/admin/use-admin-state";
-import { saveState, staffApproveByTeamMission, syncStateFromServer, usesRemoteState } from "@/lib/state";
+import { saveState, syncStateFromServer } from "@/lib/state";
 import type { AppState } from "@/lib/types";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -57,46 +57,31 @@ export default function AdminStaffPage() {
     if (!selectedMission) return;
     setWorkingTeamId(teamId);
     setMessage("");
-    if (usesRemoteState()) {
-      try {
-        const response = await fetch("/api/admin/approve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            teamId,
-            missionCode: selectedMission.code,
-            success,
-            reviewedBy: "staff-admin"
-          })
-        });
-        const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
-        if (!response.ok || !result.ok) {
-          setMessage(result.message ?? "처리하지 못했습니다. 관리자 로그인을 다시 확인해 주세요.");
-          return;
-        }
-        const next = result.state ?? await syncStateFromServer();
-        saveState(next);
-        setState(next);
-        setMessage(success ? "성공 처리했습니다." : "실패 처리했습니다.");
+    try {
+      const response = await fetch("/api/admin/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamId,
+          missionCode: selectedMission.code,
+          success,
+          reviewedBy: "staff-admin"
+        })
+      });
+      const result = (await response.json()) as { ok: boolean; message?: string; state?: AppState };
+      if (!response.ok || !result.ok) {
+        setMessage(result.message ?? "처리하지 못했습니다. 관리자 로그인을 다시 확인해 주세요.");
         return;
-      } catch (error) {
-        setMessage(error instanceof Error ? error.message : "처리 중 문제가 발생했습니다.");
-        return;
-      } finally {
-        setWorkingTeamId(null);
       }
+      const next = result.state ?? await syncStateFromServer();
+      saveState(next);
+      setState(next);
+      setMessage(success ? "성공 처리했습니다." : "실패 처리했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "처리 중 문제가 발생했습니다.");
+    } finally {
+      setWorkingTeamId(null);
     }
-    const next = staffApproveByTeamMission({
-      state,
-      teamId,
-      missionCode: selectedMission.code,
-      success,
-      reviewedBy: "staff-admin"
-    });
-    saveState(next);
-    setState(next);
-    setMessage(success ? "성공 처리했습니다." : "실패 처리했습니다.");
-    setWorkingTeamId(null);
   }
 
   return (

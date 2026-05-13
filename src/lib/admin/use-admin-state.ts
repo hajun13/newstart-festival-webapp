@@ -1,6 +1,6 @@
 "use client";
 
-import { loadState, setAdminSession, syncStateFromServer, usesRemoteState } from "@/lib/state";
+import { loadState, setAdminSession, syncStateFromServer } from "@/lib/state";
 import type { AppState } from "@/lib/types";
 import { useEffect, useState } from "react";
 
@@ -22,18 +22,21 @@ export function useAdminState() {
         setAdminSession(false);
         if (window.location.pathname !== "/admin") window.location.assign("/admin");
       });
-    if (usesRemoteState()) {
+    const refreshState = () => {
       syncStateFromServer()
         .then((next) => {
           if (mounted) setState(next);
         })
         .catch(() => undefined);
-    }
+    };
+    refreshState();
+    const interval = window.setInterval(refreshState, 5000);
     const sync = () => setState(loadState());
     window.addEventListener("newstart-state", sync);
     window.addEventListener("storage", sync);
     return () => {
       mounted = false;
+      window.clearInterval(interval);
       window.removeEventListener("newstart-state", sync);
       window.removeEventListener("storage", sync);
     };

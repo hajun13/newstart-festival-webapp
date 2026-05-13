@@ -14,12 +14,23 @@ function typeLabel(type: "notice" | "challenge") {
   return type === "challenge" ? "돌발 미션" : "공지";
 }
 
+async function persistAdminState(next: ReturnType<typeof createAnnouncement>) {
+  const response = await fetch("/api/state", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(next)
+  });
+  if (!response.ok) throw new Error("공지 저장에 실패했습니다.");
+  saveState(next);
+}
+
 export default function AdminAnnouncementsPage() {
   const [state, setState] = useAdminState();
   const [title, setTitle] = useState("NEWSTART 돌발 미션");
   const [body, setBody] = useState("지금부터 10분 안에 팀원들이 하트 포즈로 사진을 찍어 카카오톡 운영 채널로 제출하세요. 운영진 확인 후 팀 관리에서 돌발 미션 점수를 지급합니다.");
   const [type, setType] = useState<"notice" | "challenge">("challenge");
   const [points, setPoints] = useState(30);
+  const [message, setMessage] = useState("");
   const stats = useMemo(() => {
     const active = state.announcements.filter((item) => item.isActive).length;
     const challenges = state.announcements.filter((item) => item.announcementType === "challenge").length;
@@ -27,14 +38,19 @@ export default function AdminAnnouncementsPage() {
     return { active, challenges, activeChallenges };
   }, [state.announcements]);
 
-  function mutate(next: typeof state) {
-    saveState(next);
-    setState(next);
+  async function mutate(next: typeof state) {
+    try {
+      await persistAdminState(next);
+      setState(next);
+      setMessage("공지 상태를 저장했습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "공지 저장에 실패했습니다.");
+    }
   }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    mutate(
+    void mutate(
       createAnnouncement({
         state,
         title,
@@ -63,6 +79,7 @@ export default function AdminAnnouncementsPage() {
             </div>
           </div>
         </div>
+        {message ? <div className="rounded-md bg-citrus/30 p-3 text-sm font-bold">{message}</div> : null}
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
@@ -154,7 +171,7 @@ export default function AdminAnnouncementsPage() {
                         <Button
                           variant="secondary"
                           className="min-h-9 px-3 text-xs"
-                          onClick={() => mutate(toggleAnnouncement({ state, announcementId: announcement.id, actor: "admin" }))}
+                          onClick={() => void mutate(toggleAnnouncement({ state, announcementId: announcement.id, actor: "admin" }))}
                         >
                           {announcement.isActive ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
                           {announcement.isActive ? "비활성" : "활성"}
