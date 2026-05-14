@@ -108,7 +108,10 @@ async function virtualUser({ baseUrl, write, endAt, vu, metrics, iterationDelayM
   });
   const cookie = login ? extractCookie(login) : "";
   const loginBody = login ? await login.json().catch(() => null) : null;
-  const teamId = loginBody?.team?.id ?? `team-${team}`;
+  const teamId = loginBody?.team?.id;
+  if (!login?.ok || !cookie || !teamId) {
+    return;
+  }
   while (Date.now() < endAt) {
     const headers = cookie ? { Cookie: cookie } : {};
     await request(metrics, "dashboard", `${baseUrl}/api/dashboard?teamId=${encodeURIComponent(teamId)}`, { headers });
