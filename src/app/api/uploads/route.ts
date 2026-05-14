@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "파일이 없습니다." }, { status: 400 });
   }
   if (!file.type.startsWith("image/") || file.size > 4 * 1024 * 1024) {
-    return NextResponse.json({ ok: false, message: "이미지는 4MB 이하만 업로드할 수 있습니다." }, { status: 400 });
+    return NextResponse.json({ ok: false, message: "압축 후 이미지가 4MB를 넘었습니다. 다시 촬영해 주세요." }, { status: 400 });
   }
 
   const supabase = await ensureBucket();

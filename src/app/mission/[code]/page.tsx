@@ -18,11 +18,92 @@ import { CheckCircle2, FileImage, ShieldCheck } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-async function fileToLocalPreviewPath(file: File): Promise<string> {
-  if (file.size > 4 * 1024 * 1024) {
-    throw new Error("파일은 4MB 이하만 선택할 수 있습니다. 현장에서는 1MB 이하 압축 업로드를 권장합니다.");
+const MAX_COMPRESSED_IMAGE_BYTES = 4 * 1024 * 1024;
+const TARGET_IMAGE_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_EDGE = 2000;
+
+function formatBytes(bytes: number) {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))}KB`;
+}
+
+function compressedFileName(file: File) {
+  const base = file.name.replace(/\.[^.]+$/, "") || "mission-photo";
+  return `${base}.jpg`;
+}
+
+async function loadImageBitmap(file: File) {
+  if ("createImageBitmap" in window) {
+    return createImageBitmap(file);
   }
-  if (!file.type.startsWith("image/")) return `${file.name}:${file.size}`;
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const item = new Image();
+      item.onload = () => resolve(item);
+      item.onerror = () => reject(new Error("이미지를 읽을 수 없습니다."));
+      item.src = url;
+    });
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("이미지 압축에 실패했습니다."));
+      },
+      "image/jpeg",
+      quality
+    );
+  });
+}
+
+async function compressImageForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) throw new Error("이미지 파일만 업로드할 수 있습니다.");
+  if (file.size <= TARGET_IMAGE_BYTES && ["image/jpeg", "image/png", "image/webp"].includes(file.type)) return file;
+  if (file.type === "image/gif" && file.size <= MAX_COMPRESSED_IMAGE_BYTES) return file;
+
+  let image: ImageBitmap | HTMLImageElement;
+  try {
+    image = await loadImageBitmap(file);
+  } catch (error) {
+    if (file.size <= MAX_COMPRESSED_IMAGE_BYTES) return file;
+    throw error;
+  }
+  const width = image.width;
+  const height = image.height;
+  const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(width, height));
+  const targetWidth = Math.max(1, Math.round(width * scale));
+  const targetHeight = Math.max(1, Math.round(height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("이미지 압축을 준비할 수 없습니다.");
+  context.drawImage(image, 0, 0, targetWidth, targetHeight);
+  if (image instanceof ImageBitmap) image.close();
+
+  let blob = await canvasToBlob(canvas, 0.82);
+  for (const quality of [0.76, 0.68, 0.6, 0.52]) {
+    if (blob.size <= TARGET_IMAGE_BYTES) break;
+    blob = await canvasToBlob(canvas, quality);
+  }
+  if (blob.size > MAX_COMPRESSED_IMAGE_BYTES) {
+    throw new Error("이미지가 너무 큽니다. 화면을 조금 잘라 다시 찍거나, 카카오톡으로 운영진에게 보내 주세요.");
+  }
+  return new File([blob], compressedFileName(file), {
+    type: "image/jpeg",
+    lastModified: Date.now()
+  });
+}
+
+async function fileToLocalPreviewPath(file: File): Promise<string> {
+  file = await compressImageForUpload(file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
@@ -32,10 +113,11 @@ async function fileToLocalPreviewPath(file: File): Promise<string> {
 }
 
 async function uploadMissionFile(input: { file: File; teamId: string; missionCode: string }) {
+  const file = await compressImageForUpload(input.file);
   const formData = new FormData();
   formData.set("teamId", input.teamId);
   formData.set("missionCode", input.missionCode);
-  formData.set("file", input.file);
+  formData.set("file", file);
   const response = await fetch("/api/uploads", {
     method: "POST",
     body: formData
@@ -245,20 +327,23 @@ export default function MissionPage() {
                     multiple={mission.type === "photo" || mission.code === "EXE-80"}
                     onChange={async (event) => {
                       const selected = Array.from(event.currentTarget.files ?? []);
-                      const oversized = selected.find((file) => file.size > 4 * 1024 * 1024);
-                      if (oversized) {
-                        setFiles([]);
-                        setMessage("파일은 4MB 이하만 선택할 수 있습니다.");
-                        return;
-                      }
                       setFiles(selected);
-                      setMessage("이미지를 선택했습니다. 제출 시 운영 서버에 업로드됩니다.");
+                      const totalSize = selected.reduce((sum, file) => sum + file.size, 0);
+                      setMessage(
+                        selected.length
+                          ? `이미지 ${selected.length}개 선택됨. 제출할 때 자동 압축해서 업로드합니다. 원본 합계 ${formatBytes(totalSize)}`
+                          : ""
+                      );
                     }}
                   />
                   <p className="mt-2 text-xs text-ink/60">
-                    4MB 초과 파일은 차단합니다. 제출 후 관리자가 원본 이미지를 확인할 수 있습니다.
+                    휴대폰 원본 사진도 선택할 수 있습니다. 제출 시 긴 변 2000px 안팎으로 자동 압축해 운영 서버에 저장합니다.
                   </p>
-                  {files.length ? <p className="mt-2 text-sm font-bold">{files.length}개 선택됨</p> : null}
+                  {files.length ? (
+                    <p className="mt-2 text-sm font-bold">
+                      {files.length}개 선택됨 · 원본 합계 {formatBytes(files.reduce((sum, file) => sum + file.size, 0))}
+                    </p>
+                  ) : null}
                   {helper.length ? (
                     <div className="mt-4 rounded-md bg-paper p-3">
                       <div className="text-xs font-black text-clay">제출 전 체크</div>
