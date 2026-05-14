@@ -26,7 +26,7 @@
 | Nutrition | NUT-30 | 영양 관련 QR 퀴즈 | 30 | quiz | Nutrition |
 | Nutrition | NUT-50 | 생명의 식탁을 완성하라 | 50 | text | Nutrition |
 | Exercise | EXE-50 | 삼육대 무지개 루트 | 50 | photo | Exercise |
-| Exercise | EXE-80 | 네버스탑 1000보 | 80 | screenshot | Exercise |
+| Exercise | EXE-80 | 네버스탑 1000보 | 80 | photo | Exercise |
 | Water | WTR-30 | 생수의 근원을 찾아라 | 30 | quiz | Water |
 | Water | WTR-80 | 하루 2리터 챌린지 | 80 | staff | Water |
 | Sunshine | SUN-50 | 빛을 찾아서 | 50 | photo | Sunshine |
@@ -116,10 +116,10 @@
 ### EXE-80: 네버스탑 1000보
 
 - 점수: 80점
-- 인증 유형: screenshot
-- 완료 조건: 시작 시점과 종료 시점의 걸음 수 차이가 1,000보 이상
-- 제출 자료: 시작 스크린샷, 종료 스크린샷
-- 처리 방식: 관리자 검토 또는 임시 승인
+- 인증 유형: photo
+- 완료 조건: 운영진이 지급한 실제 만보기로 1,000보 이상 완료
+- 제출 자료: 만보기 숫자와 팀원이 함께 보이는 완료 사진
+- 처리 방식: 관리자 검토
 
 ## W. Water 물
 

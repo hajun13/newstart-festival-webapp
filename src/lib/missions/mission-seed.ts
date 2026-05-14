@@ -196,14 +196,14 @@ export const missionsSeed: Mission[] = [
     theme: "exercise",
     themeLabel: THEME_LABELS.exercise,
     title: "네버스탑 1000보",
-    description: "팀원 1명의 만보기 앱으로 시작과 종료 걸음 수 스크린샷을 제출합니다. 차이가 1,000보 이상이어야 합니다.",
+    description: "운영진이 나눠준 실제 만보기로 1,000보를 채운 뒤, 만보기 화면과 팀이 함께 보이게 사진을 찍어 제출합니다.",
     points: 80,
-    type: "screenshot",
-    successCriteria: "걸음 수 차이 1,000보 이상",
+    type: "photo",
+    successCriteria: "실제 만보기 1,000보 이상 완료 사진 제출",
     locationHint: "캠퍼스 전체 자유 진행",
     sortOrder: 4,
     autoApprove: false,
-    helperItems: ["시작 걸음 수 스크린샷", "종료 걸음 수 스크린샷", "걸음 수 차이 1,000보 이상"]
+    helperItems: ["운영진 지급 만보기 사용", "만보기 숫자 1,000보 이상 보이게 촬영", "팀원이 함께 보이게 촬영"]
   },
   {
     id: "mission-wtr-30",
